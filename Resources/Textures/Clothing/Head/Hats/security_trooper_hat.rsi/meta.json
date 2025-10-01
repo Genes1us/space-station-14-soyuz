@@ -1,7 +1,11 @@
 {
   "version": 1,
   "license": "CC-BY-SA-3.0",
+<<<<<<< HEAD
   "copyright": "Made by DieselMohawk for use in ss14, resprited by semkagamez (discord) for Space Station 14 server Мёртвый Космос",
+=======
+  "copyright": "Made by DieselMohawk for use in ss14, resprite by pyfya and inspector_jeleshka (discord) for Space Station 14 server Мёртвый Космос",
+>>>>>>> fobos/master
   "size": {
     "x": 32,
     "y": 32

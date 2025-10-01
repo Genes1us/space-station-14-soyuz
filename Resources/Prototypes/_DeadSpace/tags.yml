@@ -41,6 +41,9 @@
   id: ChefGoldenKnife
 
 - type: Tag
+  id: CleanerGrenade
+
+- type: Tag
   id: CartridgeLightestRifleUranium  
 
 - type: Tag
@@ -63,9 +66,6 @@
 
 - type: Tag
   id: FittableInBackpackCase
-
-- type: Tag
-  id: GoldenPlunger
 
 - type: Tag
   id: HardHat
@@ -92,6 +92,9 @@
   id: MagazineTommyGun
 
 - type: Tag
+  id: Plasteel
+
+- type: Tag
   id: MagazineTommyGunCap
 
 - type: Tag
@@ -107,10 +110,16 @@
   id: MagazineBoxLightestRifle
 
 - type: Tag
+  id: SiliconIPSIPCEmotes
+
+- type: Tag
   id: SnapPop
 
 - type: Tag
   id: SoapSyndie
+
+- type: Tag
+  id: SyndieSabre
 
 - type: Tag
   id: ToySword

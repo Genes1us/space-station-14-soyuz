@@ -1,3 +1,18 @@
+- type: loadoutEffectGroup
+  id: MasterBlueShield
+  effects:
+  - !type:JobRequirementLoadoutEffect
+    requirement:
+      !type:RoleTimeRequirement
+      role: JobBlueShieldOfficer
+      time: 54000 #15 hrs
+
+# Backpack
+- type: loadout
+  id: BlueShieldOfficerBackpack
+  equipment:
+    back: ClothingBackpackBlueShield
+
 # For coat
 - type: loadoutEffectGroup
   id: MasterOKGB
@@ -41,7 +56,6 @@
   effects:
   - !type:GroupLoadoutEffect
     proto: MasterOKGB
-
 
 - type: loadout
   id: OKGBGasMask
