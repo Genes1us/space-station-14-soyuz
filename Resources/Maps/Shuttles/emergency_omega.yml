@@ -727,15 +727,6 @@ entities:
     - type: SpreaderGrid
     - type: GridPathfinding
     - type: ImplicitRoof
-- proto: ActionToggleInternals
-  entities:
-  - uid: 3
-    components:
-    - type: Transform
-      parent: 2
-    - type: Action
-      originalIconColor: '#FFFFFFFF'
-      container: 2
 - proto: ADTtelescopicBaton
   entities:
   - uid: 4

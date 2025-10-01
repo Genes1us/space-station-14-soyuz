@@ -41,9 +41,6 @@
   id: ChefGoldenKnife
 
 - type: Tag
-  id: CleanerGrenade
-
-- type: Tag
   id: CartridgeLightestRifleUranium  
 
 - type: Tag
