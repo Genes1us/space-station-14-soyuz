@@ -1,0 +1,21 @@
+# Эмоуты Мухтара
+- type: emoteSounds
+  id: MukhtarEmote
+  params:
+    variation: 0.125
+  sounds:
+    Barking:
+      path: /Audio/_DeadSpace/_Soyuz/Voice/Mukhtar/bark.ogg
+    Growls:
+      path: /Audio/_DeadSpace/_Soyuz/Voice/Mukhtar/growls.ogg
+    Howls:
+      path: /Audio/_DeadSpace/_Soyuz/Voice/Mukhtar/howls.ogg
+    Whines:
+      path: /Audio/_DeadSpace/_Soyuz/Voice/Mukhtar/whines.ogg
+
+- type: emoteSounds
+  id: MukhtarBark
+  sounds:
+    path: /Audio/_DeadSpace/_Soyuz/Voice/Mukhtar/bark.ogg
+    params:
+      variation: 0.125

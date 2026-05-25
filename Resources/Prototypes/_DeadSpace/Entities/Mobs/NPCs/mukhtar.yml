@@ -5,6 +5,9 @@
   description: Верный пёс отдела службы безопасности.
   suffix: Призрачная роль
   components:
+  - type: Vocal
+    sounds:
+      Unsexed: MukhtarBark
   - type: CarrySize
     size: Large
   - type: Sprite
@@ -88,6 +91,7 @@
   - type: Speech
     speechSounds: Dog
     speechVerb: SmallMob
+    allowedEmotes: [ 'Barking', 'Growls', 'Howls', 'Whines' ]
   - type: Puller
     needsHands: false
   - type: Examiner
@@ -101,6 +105,7 @@
     - CannotSuicide
     - VimPilot
     - DoorBumpOpener
+    - MukhtarEmote
   - type: MeleeWeapon
     altDisarm: false
     hidden: true

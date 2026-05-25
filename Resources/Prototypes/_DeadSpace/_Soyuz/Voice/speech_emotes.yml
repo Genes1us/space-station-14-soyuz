@@ -1,0 +1,77 @@
+- type: emote
+  id: Barking
+  name: chat-emote-name-bark
+  category: Vocal
+  available: false
+  whitelist:
+    requireAll: true
+    components:
+    - Vocal
+    tags:
+    - MukhtarEmote
+  blacklist:
+    tags:
+    - SiliconEmotes
+    - SiliconIPCEmotes
+  chatMessages: ["chat-emote-msg-bark"]
+  chatTriggers:
+  - гавкать
+
+- type: emote
+  id: Growls
+  name: chat-emote-name-growl
+  category: Vocal
+  icon: _DeadSpace/Interface/Emotes/growl.png
+  available: false
+  whitelist:
+    requireAll: true
+    components:
+    - Vocal
+    tags:
+    - MukhtarEmote
+  blacklist:
+    tags:
+    - SiliconEmotes
+    - SiliconIPCEmotes
+  chatMessages: ["chat-emote-msg-growl"]
+  chatTriggers:
+  - рычать
+
+- type: emote
+  id: Howls
+  name: chat-emote-name-howl
+  category: Vocal
+  available: false
+  icon: _DeadSpace/Interface/Emotes/howl.png
+  whitelist:
+    requireAll: true
+    components:
+    - Vocal
+    tags:
+    - MukhtarEmote
+  blacklist:
+    tags:
+    - SiliconEmotes
+    - SiliconIPCEmotes
+  chatMessages: ["chat-emote-msg-howl"]
+  chatTriggers:
+  - выть
+
+- type: emote
+  id: Whines
+  name: chat-emote-name-whine
+  category: Vocal
+  available: false
+  whitelist:
+    requireAll: true
+    components:
+    - Vocal
+    tags:
+    - MukhtarEmote
+  blacklist:
+    tags:
+    - SiliconEmotes
+    - SiliconIPCEmotes
+  chatMessages: ["chat-emote-msg-whine"]
+  chatTriggers:
+  - скулить
