@@ -23,6 +23,8 @@ public abstract partial class SharedNightVisionComponent : Component
 
     [DataField]
     public bool Animation = false;
+    [DataField]
+    public EntityUid? SourceHelmet = null; // Ссылка | Новое
 }
 
 public sealed partial class ToggleNightVisionActionEvent : InstantActionEvent { }
@@ -36,6 +38,7 @@ public sealed class NightVisionComponentState : ComponentState
     public SoundSpecifier? ActivateSound;
     public bool Animation;
     public float? Duration;
+    public EntityUid? SourceHelmet { get; } // Новое
 
     public NightVisionComponentState(
         Color color,
@@ -43,7 +46,8 @@ public sealed class NightVisionComponentState : ComponentState
         uint lastToggleTick,
         SoundSpecifier? activateSound,
         bool animation,
-        float? duration)
+        float? duration,
+        EntityUid? sourceHelmet) // Новое
     {
         Color = color;
         IsNightVision = isNightVision;
@@ -51,5 +55,6 @@ public sealed class NightVisionComponentState : ComponentState
         ActivateSound = activateSound;
         Animation = animation;
         Duration = duration;
+        SourceHelmet = sourceHelmet;
     }
 }

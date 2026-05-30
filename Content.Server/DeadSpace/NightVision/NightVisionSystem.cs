@@ -46,7 +46,9 @@ public sealed class NightVisionSystem : EntitySystem
             _timing.CurTick.Value,
             component.ActivateSound,
             component.Animation,
-            component.Duration);
+            component.Duration,
+            component.SourceHelmet  // Новое
+        );
     }
 
     private void OnComponentStartup(EntityUid uid, NightVisionComponent component, ComponentStartup args)

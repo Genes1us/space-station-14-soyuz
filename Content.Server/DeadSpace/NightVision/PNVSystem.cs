@@ -15,7 +15,6 @@ public sealed class PNVSystem : EntitySystem
     public override void Initialize()
     {
         base.Initialize();
-
         SubscribeLocalEvent<PNVComponent, GotEquippedEvent>(OnGotEquipped);
         SubscribeLocalEvent<PNVComponent, GotUnequippedEvent>(OnGotUnequipped);
     }
@@ -28,15 +27,16 @@ public sealed class PNVSystem : EntitySystem
         if (HasComp<NightVisionComponent>(args.Equipee))
             return;
 
-        var nightVisionComp = new NightVisionComponent(comp.Color, comp.ActivateSound, comp.Animation);
-        comp.HasNightVision = true;
-
+        var nightVisionComp = new NightVisionComponent(comp.Color, comp.ActivateSound, comp.Animation)
+        {
+            SourceHelmet = entity
+        };
         AddComp(args.Equipee, nightVisionComp);
     }
 
     private void OnGotUnequipped(EntityUid entity, PNVComponent comp, ref GotUnequippedEvent args)
     {
-        if (comp.HasNightVision && HasComp<NightVisionComponent>(args.Equipee))
+        if (TryComp<NightVisionComponent>(args.Equipee, out var nvComp) && nvComp.SourceHelmet == entity)
             RemComp<NightVisionComponent>(args.Equipee);
     }
 }
