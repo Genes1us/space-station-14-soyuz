@@ -40,14 +40,16 @@
   components:
   - type: StorageFill
     contents:
+      - id: NanotrasenFlippo
+      - id: CigarGoldCase
+      - id: FlashlightSeclite
+      - id: NitrogenTankFilled
+      - id: OxygenTankFilled
+      - id: MedkitFilled
       - id: MedkitCombatFilled
       - id: MedkitAdvancedFilled
-      - id: FlashlightSeclite
+      - id: ClothingEyesGlassesAdvancedOKGB # DS14-Soyuz
       - id: RubberStampBlueShield
-      - id: CigarGoldCase
-      - id: NanotrasenFlippo
       - id: WeaponDisabler
-      - id: ClothingEyesHudERT
-      - id: ClothingMaskGasSwat
       - id: ClothingHeadHelmetBlueShield
-
+      - id: ClothingNeckCloakNanotrasen # DS14-Soyuz
