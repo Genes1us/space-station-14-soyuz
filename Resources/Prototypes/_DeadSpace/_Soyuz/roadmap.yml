@@ -69,11 +69,3 @@
   tags:
     - "Нереализуемо"
 
-- type: roadmapEntry
-  id: Roadmap8
-  title: "Тест роадмап"
-  description: "Тест да"
-  category: Completed
-  tags:
-    - "Выполнено скоро"
-    - "клянусь"
