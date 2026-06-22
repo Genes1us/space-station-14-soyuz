@@ -12,3 +12,10 @@
   - PolitrukHead
   - PolitrukSocks
   - PolitrukUnderwear
+
+# Prisoner
+- type: roleLoadout
+  id: JobPrisoner
+  groups:
+  - PrisonerJumpsuit
+  - DefaultWhiteUnderwear

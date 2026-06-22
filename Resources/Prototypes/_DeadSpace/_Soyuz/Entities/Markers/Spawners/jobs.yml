@@ -21,3 +21,15 @@
     layers:
       - state: green
       - state: Politruk
+
+- type: entity
+  id: SpawnPointPrisoner
+  parent: SpawnPointJobBase
+  name: заключённый
+  components:
+  - type: SpawnPoint
+    job_id: Prisoner
+  - type: Sprite
+    layers:
+      - state: green
+      - state: Politruk

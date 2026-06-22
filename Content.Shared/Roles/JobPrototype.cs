@@ -182,6 +182,16 @@ namespace Content.Shared.Roles
         [DataField("isTaipan")]
         public bool IsTaipan { get; private set; } = false;
         // DS14-end
+
+        // DS14-Soyuz start
+
+        /// <summary>
+        /// True = Force spawn on station
+        /// False = Spawn on Terminal
+        /// </summary>
+        [DataField("spawnOnStation")]
+        public bool SpawnOnStation { get; private set; } = false;
+        // DS14-Soyuz end
     }
 
     /// <summary>
