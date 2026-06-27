@@ -263,6 +263,103 @@ jobs:
         EMBED_STYLE: ${{ steps.params.outputs.embed_style }}
         COLOR_SCHEME: ${{ steps.params.outputs.color_scheme }}
     
+    - name: Delete another embeds
+      env:
+        DISCORD_WEBHOOK_URL_ROADMAP: ${{ secrets.ROADMAP_DISCORD_WEBHOOK }}
+      run: |
+        python3 << 'EOF'
+        import os
+        import sys
+        import requests
+        import time
+
+        webhook = os.environ.get('DISCORD_WEBHOOK_URL_ROADMAP')
+        if not webhook:
+            print("Ошибка: ROADMAP_DISCORD_WEBHOOK не найден в secrets!")
+            sys.exit(1)
+
+        response = requests.get(webhook)
+        if response.status_code != 200:
+            print(f"Ошибка при получении информации о вебхуке: {response.status_code}")
+            sys.exit(1)
+
+        webhook_data = response.json()
+        channel_id = webhook_data.get('channel_id')
+        
+        if not channel_id:
+            print("Ошибка: Не удалось получить ID канала")
+            sys.exit(1)
+        
+        bot_token = os.environ.get('DISCORD_BOT_TOKEN')
+        if not bot_token:
+            print("Ошибка: DISCORD_BOT_TOKEN не найден в secrets!")
+            sys.exit(1)
+
+        headers = {
+            'Authorization': f'Bot {bot_token}',
+            'Content-Type': 'application/json'
+        }
+
+        print("Cleaning another embeds...")
+
+        deleted_total = 0
+        while True:
+            response = requests.get(
+                f'https://discord.com/api/v10/channels/{channel_id}/messages?limit=100',
+                headers=headers
+            )
+
+            if response.status_code != 200:
+                print(f"Ошибка при попытке получить сообщения: {response.status_code}")
+                break
+            
+            messages = response.json()
+            
+            if not messages:
+                print("Cleaning completed. Ending task...")
+                break
+
+            message_ids = [msg['id'] for msg in messages]
+            delete_response = None
+
+            if len(message_ids) == 1:
+                delete_response = requests.delete(
+                    f'https://discord.com/api/v10/channels/{channel_id}/messages/{message_ids[0]}',
+                    headers=headers
+                )
+                deleted_total += 1
+                print("Cleaning completed. Ending task...")
+            else:
+                delete_response = requests.post(
+                    f'https://discord.com/api/v10/channels/{channel_id}/messages/bulk-delete',
+                    headers=headers,
+                    json={'messages': message_ids}
+                )
+                deleted_total += len(message_ids)
+                print("Cleaning completed. Ending task...")
+            
+            if delete_response and delete_response.status_code == 429:
+                retry_after = delete_response.json().get('retry_after', 5)
+                print(f"Request limit, waiting {retry_after} seconds...")
+                time.sleep(retry_after)
+            
+            elif delete_response and delete_response.status_code not in [200, 204]:
+                print(f"Ошибка удаления: {delete_response.status_code}")
+                print(delete_response.text)
+                break
+
+            if len(messages) < 100:
+                print("Cleaning completed. Ending task...")
+                break
+            
+            time.sleep(0.5)
+        
+        print(f"All messages deleted. Deleted: {deleted_total} messages")
+        EOF
+        
+      env:
+        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+
     - name: Send to Discord
       env:
         DISCORD_WEBHOOK_URL_ROADMAP: ${{ secrets.ROADMAP_DISCORD_WEBHOOK }}
