@@ -2,6 +2,7 @@
 
 using System.Numerics;
 using System.Linq;
+using Content.Server.Construction;
 using Content.Shared.Atmos.Components;
 using Content.Shared.Atmos.EntitySystems;
 using Content.Shared.DeadSpace._Soyuz.RepairOrders;
@@ -46,6 +47,7 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
         SubscribeLocalEvent<RepairBlueprintComponent, ComponentShutdown>(OnBlueprintShutdown);
         SubscribeLocalEvent<RepairBlueprintComponent, GridSplitEvent>(OnGridSplit);
         SubscribeLocalEvent<TransformComponent, EntityTerminatingEvent>(OnTransformTerminating);
+        SubscribeLocalEvent<TransformComponent, AfterConstructionChangeEntityEvent>(OnConstructionChanged);
         SubscribeLocalEvent<TileChangedEvent>(OnTileChanged);
         SubscribeLocalEvent<AnchorStateChangedEvent>(OnAnchorStateChanged);
         SubscribeLocalEvent<TransformComponent, TrySetNextPipeLayerCompletedEvent>(OnPipeLayerCycled);
@@ -266,7 +268,7 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
             blueprint.Comp.EntityIdentityRules.Clear();
             blueprint.Comp.EntityIdentityRules.AddRange(scoreLookup.EntityIdentityRules);
             BuildExpectedTarget(blueprint, target, scoreLookup);
-            return !scoreLookup.Invalid;
+            return true;
         }
         catch (Exception exception)
         {
@@ -469,9 +471,7 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
 
         RecalculateProgress(blueprint, initializeBaseline);
         SyncProgress((repairGrid, blueprint), forceUiRefresh: WorklistChanged(previousWorklist, GetWorklist(repairGrid)));
-        blueprint.FullyMatchesTarget &= !scoreLookup.Invalid;
-        blueprint.CanComplete &= !scoreLookup.Invalid;
-        return !scoreLookup.Invalid;
+        return true;
     }
 
     /// <summary>
@@ -616,8 +616,8 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
             foreach (var expectedEntity in expected.Entities)
             {
                 var matchedCount = comparison.MatchedCounts.GetValueOrDefault(expectedEntity);
-                var hasUnexpectedAtPosition = comparison.UnexpectedPositions.Contains(
-                    expectedEntity.Signature.LocalPosition);
+                var hasUnexpectedAtPosition = comparison.UnexpectedPositions.Any(position =>
+                    position.EqualsApprox(expectedEntity.Signature.LocalPosition));
 
                 for (var requiredCount = 1; requiredCount <= expectedEntity.Count; requiredCount++)
                 {
@@ -845,9 +845,9 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
     {
         return actual.Anchored == expected.Anchored &&
                actual.Signature.Prototype == expected.Signature.Prototype &&
-               actual.Signature.LocalPosition == expected.Signature.LocalPosition &&
-               CanonicalizeRotation(actual.RawLocalRotation, expected.Signature.RotationMode) ==
-               expected.Signature.LocalRotation;
+               actual.Signature.LocalPosition.EqualsApprox(expected.Signature.LocalPosition) &&
+               CanonicalizeRotation(actual.RawLocalRotation, expected.Signature.RotationMode)
+                   .EqualsApprox(expected.Signature.LocalRotation);
     }
 
     private static int RotationSpecificity(RepairRotationMode mode)
@@ -927,7 +927,6 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
         if (scoreLookup.Values.IsExcluded(prototypeId))
             return false;
 
-        // Even an identity-equivalent actual variant needs its own exact classification.
         if (!scoreLookup.Values.TryResolve(prototypeId, out _))
             ResolveEntityPoints(scoreLookup, prototypeId, xform.LocalPosition);
 
@@ -1093,9 +1092,6 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
             return;
         }
 
-        if (active.CurrentPoints != blueprint.Comp.CurrentPoints ||
-            (active.Exclusions?.Totals.Count ?? 0) != exclusions.Totals.Count)
-            active.PendingRewards = null;
         active.Exclusions = exclusions;
         active.CompletedTasks = blueprint.Comp.CompletedTasks;
         active.TotalTasks = blueprint.Comp.TotalTasks;
@@ -1144,6 +1140,12 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
         }
 
         MarkDirty(gridUid, LocalPositionToCell(grid, entity.Comp.LocalPosition));
+    }
+
+    private void OnConstructionChanged(Entity<TransformComponent> entity, ref AfterConstructionChangeEntityEvent args)
+    {
+        if (entity.Comp.Anchored)
+            MarkDirtyFromCoordinates(entity.Comp.Coordinates);
     }
 
     private void MarkDirtyFromCoordinates(EntityCoordinates coordinates)
@@ -1276,13 +1278,11 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
         if (lookup.Values.TryResolve(entityPrototype, out var points))
             return points;
 
-        lookup.Invalid = true;
         if (lookup.MissingValues.Add(entityPrototype))
         {
-            _sawmill.Error($"Repair value configuration error: order {lookup.Order}, grid {lookup.Grid}, " +
-                           $"entity prototype {entityPrototype}, position {position}. No exact RepairValue classification.");
+            _sawmill.Debug($"Repair order {lookup.Order}, grid {lookup.Grid}, entity prototype {entityPrototype}, " +
+                           $"position {position}: no RepairValue classification; using 0 points.");
         }
-        // Invalid sessions cannot activate or complete. No default price is assigned.
         return 0;
     }
 
@@ -1328,7 +1328,9 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
         }
 
         if (selector.Parents.Count > 0 &&
-            !selector.Parents.Any(parent => IsPrototypeOrDescendant(prototype.ID, parent.Id)))
+            !selector.Parents.Any(parent => selector.IncludeAbstractParents
+                ? IsPrototypeOrDescendantIncludingAbstract(prototype.ID, parent.Id)
+                : IsPrototypeOrDescendant(prototype.ID, parent.Id)))
         {
             return false;
         }
@@ -1376,6 +1378,12 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
         return false;
     }
 
+    private bool IsPrototypeOrDescendantIncludingAbstract(string prototypeId, string parentId)
+    {
+        return _prototype.EnumerateAllParents<EntityPrototype>(prototypeId, includeSelf: true)
+            .Any(parent => parent.id == parentId);
+    }
+
     private bool ValidateSelector(string profile, RepairEntitySelector selector, string ruleType)
     {
         if (selector.Entities.Count == 0 &&
@@ -1388,13 +1396,25 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
             return false;
         }
 
-        foreach (var entity in selector.Entities.Concat(selector.Parents))
+        foreach (var entity in selector.Entities)
         {
             if (_prototype.HasIndex<EntityPrototype>(entity))
                 continue;
 
             _sawmill.Warning(
                 $"Repair score profile {profile} contains a {ruleType} selector with missing entity prototype {entity}; the rule is ignored.");
+            return false;
+        }
+
+        foreach (var parent in selector.Parents)
+        {
+            if (_prototype.HasIndex<EntityPrototype>(parent) ||
+                selector.IncludeAbstractParents &&
+                _prototype.EnumerateAllParents<EntityPrototype>(parent.Id, includeSelf: true).Any())
+                continue;
+
+            _sawmill.Warning(
+                $"Repair score profile {profile} contains a {ruleType} selector with missing entity prototype {parent}; the rule is ignored.");
             return false;
         }
 
@@ -1427,7 +1447,6 @@ public sealed partial class RepairOrderValidationSystem : EntitySystem
         public readonly EntityUid Grid = grid;
         public readonly RepairValueCatalog Values = values;
         public int FloorTilePoints;
-        public bool Invalid;
         public readonly List<RepairEntityIdentityRule> EntityIdentityRules = new();
         public readonly List<RepairRotationRule> RotationRules = new();
         public readonly HashSet<string> MissingValues = new();

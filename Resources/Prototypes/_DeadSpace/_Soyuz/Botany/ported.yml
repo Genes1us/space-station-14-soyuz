@@ -4,46 +4,6 @@
 # All prototype logic and text are locally rewritten; each RSI keeps its own
 # license metadata. No AGPL C# implementation was imported.
 
-- type: entity
-  parent: BaseHandheldComputer
-  id: SoyuzPlantAnalyzer
-  name: plant analyzer
-  description: Переносной прибор для анализа растений и семян.
-  components:
-  - type: Sprite
-    sprite: Objects/Specific/Medical/healthanalyzer.rsi
-    state: icon
-  - type: Item
-    storedRotation: -90
-  - type: ActivatableUI
-    key: enum.SoyuzPlantAnalyzerUiKey.Key
-    inHandsOnly: true
-  - type: UserInterface
-    interfaces:
-      enum.SoyuzPlantAnalyzerUiKey.Key:
-        type: SoyuzPlantAnalyzerBoundUserInterface
-  - type: SoyuzPlantAnalyzer
-    scanDelay: 0.5
-    advancedScanDelay: 1
-
-- type: latheRecipe
-  parent: BaseToolRecipe
-  id: SoyuzPlantAnalyzer
-  result: SoyuzPlantAnalyzer
-  categories:
-  - Tools
-  completetime: 3
-  materials:
-    Steel: 500
-    Glass: 500
-    Plastic: 100
-    Gold: 100
-
-- type: latheRecipePack
-  id: SoyuzBotanyProtolatheStatic
-  recipes:
-  - SoyuzPlantAnalyzer
-
 - type: flavor
   id: spices
   flavorType: Complex
@@ -1589,46 +1549,6 @@
   - Vegetable
 
 - type: entity
-  parent: FoodProduceBase
-  id: FoodAmbrosiaNobilis
-  components:
-  - type: FlavorProfile
-    flavors:
-      - leafy
-      - medicine
-  - type: SolutionContainerManager
-    solutions:
-      food:
-        maxVol: 10
-        reagents:
-        - ReagentId: Tricordrazine
-          Quantity: 3
-        - ReagentId: SpaceDrugs
-          Quantity: 5
-        - ReagentId: Nutriment
-          Quantity: 2
-  - type: Sprite
-    sprite: Objects/Specific/Hydroponics/ambrosia_deus.rsi
-  - type: Item
-    heldPrefix: produce
-  - type: Produce
-    plantId: AmbrosiaNobilisPlants
-  - type: Extractable
-    grindableSolutionName: food
-  - type: Clothing
-    sprite: Objects/Specific/Hydroponics/ambrosia_deus.rsi
-    slots:
-    - HEAD
-  - type: Tag
-    tags:
-    - Ambrosia
-  - type: FoodSequenceElement
-    entries:
-      Taco: AmbrosiaDeus
-      Burger: AmbrosiaDeusBurger
-
-
-- type: entity
   parent: SeedBase
   id: CrystalThistleSeeds
   components:
@@ -1654,16 +1574,6 @@
       plantId: CosmicRevenantPlants
     - type: Sprite
       sprite: _DeadSpace/_Soyuz/Objects/Specific/Hydroponics/Cosmic_Revenant.rsi
-
-- type: entity
-  parent: SeedBase
-  id: AmbrosiaNobilis
-  components:
-    - type: Seed
-      plantId: AmbrosiaNobilisPlants
-    - type: Sprite
-      sprite: Objects/Specific/Hydroponics/ambrosia_deus.rsi
-
 
 - type: entity
   parent: FoodProduceBase
@@ -2538,3 +2448,8 @@
   - type: Tag
     tags:
     - Food
+
+- type: latheRecipePack
+  id: SoyuzBotanyProtolatheStatic
+  recipes:
+  - PlantAnalyzer

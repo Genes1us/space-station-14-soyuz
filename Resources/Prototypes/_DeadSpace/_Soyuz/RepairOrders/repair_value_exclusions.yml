@@ -17,12 +17,12 @@
   - DebugThruster
   - TableDebug
   - WallDebug
-
   - PlasticFlapsAirtightClear
   - PlasticFlapsAirtightOpaque
   - CargoPallet
   - CargoPalletSell
   - CargoPalletBuy
+  - StationAnchor
 
 - type: repairValueExclusion
   id: RepairExcludeBiologicalAndEventEntities
@@ -186,7 +186,6 @@
   reason: Living botany plants are outside station repair construction.
   entities:
   - AgentgrainPlants
-  - AmbrosiaNobilisPlants
   - AvocadoPlants
   - BarrelmelonPlants
   - BeesPlants
@@ -231,6 +230,8 @@
   - StrangeBerriesPlants
   - WhiteLilyPlants
   - WhiterosePlants
+  - LockerPolitRukFilled
+  - LockerPolitRuk
 # DS14-Soyuz end
 
 - type: repairValueExclusion
@@ -1059,6 +1060,12 @@
   - FireworkBox
 
 - type: repairValueExclusion
+  id: RepairExcludeIndestructibleStationAnchor
+  reason: Map-only indestructible station anchors cannot be rebuilt.
+  entities:
+  - StationAnchorIndestructible
+
+- type: repairValueExclusion
   id: RepairExcludeConstructionIntermediates
   reason: Temporary construction stages are not completed repair structures.
   entities:
@@ -1214,6 +1221,14 @@
   - XenoborgDeflectorField
 
 - type: repairValueExclusion
+  id: RepairExcludeArcadeMachines
+  reason: Arcade machines should remain intact and outside repair requirements.
+  entities:
+  - BlockGameArcade
+  - SpaceVillainArcade
+  - SpaceVillainArcadeFilled
+
+- type: repairValueExclusion
   id: RepairExcludeGasMiners
   reason: Gas miners should not be procedurally damaged or included in repair requirements.
   entities:
@@ -1272,3 +1287,13 @@
   - BrigTimer
   - StationMap
   - StationMapBroken
+
+- type: repairValueExclusion
+  id: RepairExcludeLadders
+  reason: Не ебу
+  entities:
+  - RMCLadder
+  - RMCLadderRope
+  - RMCLadderRopeAltDrawdepth
+  - RMCLadderThrough
+  - RMCLadderUp

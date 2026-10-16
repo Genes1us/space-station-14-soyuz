@@ -55,9 +55,6 @@
       entities: [ReinforcedWindowIndestructible]
     canonical: ReinforcedWindow
   - selector:
-      entities: [StationAnchorIndestructible]
-    canonical: StationAnchor
-  - selector:
       entities: [WallPlastitaniumDiagonalIndestructible]
     canonical: WallPlastitaniumDiagonal
   - selector:
@@ -81,27 +78,10 @@
   - selector:
       entities: [CableTerminalUncuttable]
     canonical: CableTerminal
-  # Match armor before the common windoor ancestors; all secure materials rebuild as WindoorSecure.
-  - selector:
-      parents: [BaseClockworkWindoor]
-    canonical: WindoorClockwork
-  - selector:
-      parents: [BaseSecurePlasmaWindoor]
-    canonical: WindoorSecure
-  - selector:
-      parents: [BasePlasmaWindoor]
-    canonical: WindoorPlasma
-  - selector:
-      parents: [BaseSecureUraniumWindoor]
-    canonical: WindoorSecure
-  - selector:
-      parents: [BaseUraniumWindoor]
-    canonical: WindoorUranium
-  - selector:
-      parents: [BaseSecureWindoor]
-    canonical: WindoorSecure
+  # Any sliding window or armored sliding window can be rebuilt with any material variant.
   - selector:
       parents: [BaseWindoor]
+      includeAbstractParents: true
     canonical: Windoor
   - selector:
       parents: [Holopad]
@@ -138,12 +118,7 @@
   - selector:
       entities: [MiningWindowDiagonal, MiningWindowDiagonalSoyuz]
     canonical: MiningWindowDiagonal
-  - selector:
-      entities: [AirlockExternalGlassShuttleGeneralStaff, AirlockGlassShuttleXenoborgLocked]
-    canonical: AirlockGlassShuttle
-  - selector:
-      parents: [AirlockGlassShuttle]
-    canonical: AirlockGlassShuttle
+  # Any docking airlock can be rebuilt with either hand-built shuttle airlock.
   - selector:
       parents: [AirlockShuttle]
     canonical: AirlockShuttle
@@ -157,9 +132,14 @@
   - selector:
       parents: [BlastDoor]
     canonical: BlastDoor
+  # Filled bookshelves match the hand-built empty bookshelf.
+  - selector:
+      entities: [BookshelfFilled]
+    canonical: Bookshelf
   # All wall closets/lockers are equivalent for repair purposes.
   - selector:
       parents: [BaseWallCloset, BaseWallLocker]
+      includeAbstractParents: true
     canonical: ClosetWall
 
   # Rotation is opt-in. Tables and ordinary walls/windows/airlocks therefore ignore it.
@@ -188,6 +168,7 @@
     mode: Exact
   - selector:
       parents: [GasPipeBase]
+      includeAbstractParents: true
     mode: Exact
 
   # Covers other gas-network machinery, including pumps, valves, filters, mixers, injectors and gas miners.
@@ -201,6 +182,7 @@
 
   - selector:
       parents: [DisposalPipeBase]
+      includeAbstractParents: true
     mode: Exact
 
   # Directional atmos fixtures.
@@ -221,12 +203,10 @@
       parents:
       - BaseLightbulb
       - EmergencyLight
+      includeAbstractParents: true
     mode: Exact
 
   # Shuttle airlocks and docking ports are directional.
-  - selector:
-      parents: [AirlockShuttle]
-    mode: Exact
   - selector:
       allComponents: [Docking]
     mode: Exact
@@ -234,4 +214,5 @@
   # Chairs, sofas, benches and other SeatBase descendants are directional.
   - selector:
       parents: [SeatBase]
+      includeAbstractParents: true
     mode: Exact

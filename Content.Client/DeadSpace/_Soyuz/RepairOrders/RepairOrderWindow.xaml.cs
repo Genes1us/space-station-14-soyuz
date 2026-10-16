@@ -1,6 +1,7 @@
 // Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSES/LICENSE.TXT
 
 using System.Numerics;
+using System.Linq;
 using Content.Client.UserInterface.Controls;
 using Content.Client.Message;
 using Content.Shared.DeadSpace._Soyuz.RepairOrders;
@@ -29,23 +30,101 @@ public sealed partial class RepairOrderWindow : FancyWindow
     private readonly SpriteSystem _sprite;
 
     private readonly Dictionary<int, Button> _offerControls = new();
+    private readonly RepairOrderShopDraft _draft;
+    private readonly Dictionary<string, int> _shopCart;
     private RepairOrderBoundUserInterfaceState? _state;
+    private bool _shopPurchasePending => _draft.PendingRequestId != null;
+    private bool _retryPendingPurchase;
+    private FancyWindow? _completionDialog;
+    private FancyWindow? _briefingDialog;
+    private FancyWindow? _shopDetailsDialog;
+    private string? _shopDetailsRewardId;
     private (TimeSpan ExpiresAt, Label Timer, Button Complete)? _activeControls;
 
     public event Action<int>? OnAccept;
-    public event Action<int>? OnComplete;
+    public event Action<int, bool>? OnComplete;
     public event Action<int>? OnPrintReport;
+    public event Action<string, List<RepairOrderRewardBuiEntry>>? OnShopPurchase;
 
-    public RepairOrderWindow()
+    public RepairOrderWindow(RepairOrderShopDraft? draft = null)
     {
+        _draft = draft ?? new RepairOrderShopDraft();
+        _shopCart = _draft.Cart;
+        _retryPendingPurchase = _shopPurchasePending;
         RobustXamlLoader.Load(this);
         IoCManager.InjectDependencies(this);
         _sprite = _entitySystemManager.GetEntitySystem<SpriteSystem>();
+        ShopSearch.Text = _draft.Search;
+        ShopCompact.Pressed = _draft.Compact;
+        ShopCompact.OnToggled += args =>
+        {
+            _draft.Compact = args.Pressed;
+            UpdateShop();
+        };
+        OrderTabs.CurrentTab = _draft.Tab;
+        ShopSearch.OnTextChanged += args =>
+        {
+            _draft.Search = args.Text;
+            UpdateShop();
+        };
+        ShopCheckoutButton.OnPressed += _ => SubmitShopPurchase();
+        BriefingButton.OnPressed += _ => ShowBriefing();
+        OnClose += () =>
+        {
+            SaveDraft();
+            _completionDialog?.Dispose();
+            _completionDialog = null;
+            _briefingDialog?.Dispose();
+            _briefingDialog = null;
+            CloseShopDetails();
+        };
+    }
+
+    public void SaveDraft()
+    {
+        _draft.Tab = OrderTabs.CurrentTab;
+    }
+
+    private void ShowBriefing()
+    {
+        _briefingDialog?.Dispose();
+        var dialog = new FancyWindow
+        {
+            Title = Loc.GetString("repair-orders-briefing-title"),
+            SetSize = new Vector2(460, 440),
+            MinSize = new Vector2(360, 260),
+        };
+        _briefingDialog = dialog;
+        dialog.OnClose += () =>
+        {
+            if (ReferenceEquals(_briefingDialog, dialog))
+                _briefingDialog = null;
+            dialog.Dispose();
+        };
+        var scroll = new ScrollContainer
+        {
+            HScrollEnabled = false,
+            HorizontalExpand = true,
+            VerticalExpand = true,
+        };
+        var text = new RichTextLabel { HorizontalExpand = true, Margin = new Thickness(8) };
+        text.SetMessage(Loc.GetString("repair-orders-briefing-text"));
+        scroll.AddChild(text);
+        dialog.ContentsContainer.AddChild(scroll);
+        dialog.OpenCentered();
     }
 
     public void UpdateState(RepairOrderBoundUserInterfaceState state)
     {
-        var showActive = state.Active != null && state.Active.RuntimeId != _state?.Active?.RuntimeId;
+        var showActive = _state != null && state.Active != null && state.Active.RuntimeId != _state.Active?.RuntimeId;
+        if (_draft.RewardPoolId != null && _draft.RewardPoolId != state.ShopRewardPoolId && !_shopPurchasePending)
+            _shopCart.Clear();
+        _draft.RewardPoolId = state.ShopRewardPoolId;
+        if (state.Active?.RuntimeId != _state?.Active?.RuntimeId || state.Completing)
+        {
+            _completionDialog?.Dispose();
+            _completionDialog = null;
+        }
         _state = state;
         ActivationLabel.Visible = state.Accepting;
         CompletionLabel.Visible = state.Completing;
@@ -102,10 +181,32 @@ public sealed partial class RepairOrderWindow : FancyWindow
         }
 
         UpdateWorklist(state);
+        UpdateShop();
 
         UpdateTimers();
         if (showActive)
             OrderTabs.CurrentTab = 1;
+        if (_retryPendingPurchase)
+        {
+            _retryPendingPurchase = false;
+            if (_draft.PendingRequestId is { } requestId && _draft.PendingLines is { } lines)
+                OnShopPurchase?.Invoke(requestId, lines.ToList());
+        }
+    }
+
+    public void ShowShopResult(RepairOrderShopResultMessage result)
+    {
+        if (result.RequestId != _draft.PendingRequestId)
+            return;
+
+        _draft.PendingRequestId = null;
+        _draft.PendingLines = null;
+        if (result.Success)
+            _shopCart.Clear();
+
+        ShopResultLabel.Text = Loc.GetString(result.Message);
+        ShopResultLabel.FontColorOverride = result.Success ? Color.LightGreen : Color.Orange;
+        UpdateShop();
     }
 
     private void UpdateWorklist(RepairOrderBoundUserInterfaceState state)
@@ -211,6 +312,509 @@ public sealed partial class RepairOrderWindow : FancyWindow
             });
             WorklistContainer.AddChild(row);
         }
+    }
+
+    private void UpdateShop()
+    {
+        if (_state == null)
+            return;
+
+        var state = _state;
+        if (_shopPurchasePending)
+            ShopResultLabel.Text = Loc.GetString("repair-orders-shop-processing");
+        ShopPointsLabel.Text = Loc.GetString("repair-orders-shop-points", ("points", state.RepairPoints));
+        ShopReputationLabel.Text = Loc.GetString("repair-orders-shop-reputation", ("reputation", state.EngineeringReputation));
+        ShopLevelLabel.Text = state.ShopLevel > 0
+            ? Loc.GetString("repair-orders-shop-level", ("level", state.ShopLevel))
+            : Loc.GetString("repair-orders-shop-unavailable");
+        ShopProgressBar.Visible = state.NextShopLevelThreshold != null;
+        if (state.ShopLevel == 0)
+        {
+            ShopProgressLabel.Text = string.Empty;
+        }
+        else if (state.NextShopLevelThreshold is { } nextThreshold)
+        {
+            ShopProgressLabel.Text = Loc.GetString("repair-orders-shop-next-level",
+                ("reputation", state.EngineeringReputation), ("required", nextThreshold));
+            ShopProgressBar.Value = nextThreshold <= 0
+                ? 0f
+                : Math.Clamp((float) state.EngineeringReputation / nextThreshold, 0f, 1f);
+        }
+        else
+        {
+            ShopProgressLabel.Text = Loc.GetString("repair-orders-shop-max-level");
+        }
+
+        ShopCatalogContainer.RemoveAllChildren();
+        ShopCartContainer.RemoveAllChildren();
+        if (!_prototype.TryIndex<RepairRewardPoolPrototype>(state.ShopRewardPoolId, out var pool))
+        {
+            CloseShopDetails();
+            ShopCatalogContainer.AddChild(new Label { Text = Loc.GetString("repair-orders-shop-unavailable") });
+            ShopCheckoutButton.Disabled = true;
+            return;
+        }
+
+        var validRewards = new HashSet<string>();
+        var compact = _draft.Compact;
+        WrapContainer? cards = null;
+        if (compact)
+        {
+            cards = new WrapContainer
+            {
+                HorizontalExpand = true,
+                EqualSize = true,
+                SeparationOverride = 8,
+                CrossSeparationOverride = 8,
+            };
+            ShopCatalogContainer.AddChild(cards);
+        }
+        var visibleRewards = 0;
+        var search = ShopSearch.Text.Trim();
+        foreach (var rewardId in pool.Rewards)
+        {
+            if (!_prototype.TryIndex<RepairRewardPrototype>(rewardId, out var reward) ||
+                reward.EmagOnly && !state.ShopEmagged ||
+                !_prototype.TryIndex<EntityPrototype>(reward.Entity, out var entity))
+                continue;
+
+            var id = rewardId.Id;
+            validRewards.Add(id);
+            var locked = state.ShopLevel < reward.MinimumShopLevel;
+            var classified = reward.Classified && locked;
+            var name = classified ? Loc.GetString("repair-orders-shop-classified") : entity.Name;
+            if (!name.Contains(search, StringComparison.OrdinalIgnoreCase))
+                continue;
+            visibleRewards++;
+            if (cards != null)
+            {
+                cards.AddChild(CreateShopCard(reward, entity, locked, classified));
+                continue;
+            }
+            var row = new PanelContainer { HorizontalExpand = true, Margin = new Thickness(2) };
+            var content = new BoxContainer
+            {
+                Orientation = BoxContainer.LayoutOrientation.Horizontal,
+                HorizontalExpand = true,
+                Margin = new Thickness(6, 4),
+                SeparationOverride = 6,
+            };
+            row.AddChild(content);
+
+            if (classified)
+            {
+                content.AddChild(new Label
+                {
+                    Text = Loc.GetString("repair-orders-shop-classified-icon"),
+                    MinSize = new Vector2(32, 32),
+                    HorizontalAlignment = HAlignment.Center,
+                    VerticalAlignment = VAlignment.Center,
+                    FontColorOverride = Color.Orange,
+                });
+            }
+            else
+            {
+                var icon = new EntityPrototypeView
+                {
+                    SetSize = new Vector2(32, 32),
+                    Stretch = SpriteView.StretchMode.Fit,
+                };
+                icon.SetPrototype(entity.ID);
+                content.AddChild(icon);
+            }
+
+            var details = new BoxContainer
+            {
+                Orientation = BoxContainer.LayoutOrientation.Vertical,
+                HorizontalExpand = true,
+                SeparationOverride = 0,
+                VerticalAlignment = VAlignment.Center,
+            };
+            details.AddChild(new Label
+            {
+                Text = name,
+                HorizontalExpand = true,
+                ToolTip = classified ? name : entity.Name + "\n" + entity.Description,
+            });
+            details.AddChild(new Label
+            {
+                Text = classified
+                    ? Loc.GetString("repair-orders-shop-classified-details", ("level", reward.MinimumShopLevel))
+                    : Loc.GetString("repair-orders-shop-item-details",
+                        ("cost", reward.Cost), ("level", reward.MinimumShopLevel)),
+                FontColorOverride = locked ? Color.Orange : Color.LightGray,
+                VerticalAlignment = VAlignment.Center,
+            });
+            content.AddChild(details);
+
+            content.AddChild(CreateShopQuantityControls(reward, locked, false));
+            ShopCatalogContainer.AddChild(row);
+        }
+
+        if (!_shopPurchasePending)
+        {
+            foreach (var stale in _shopCart.Keys.Where(id => !validRewards.Contains(id)).ToArray())
+                _shopCart.Remove(stale);
+        }
+        if (visibleRewards == 0)
+            ShopCatalogContainer.AddChild(new Label { Text = Loc.GetString("repair-orders-shop-no-results") });
+
+        UpdateShopCart();
+        UpdateShopDetails();
+    }
+
+    private Control CreateShopCard(RepairRewardPrototype reward, EntityPrototype entity, bool locked, bool classified)
+    {
+        var card = new PanelContainer { SetWidth = 190 };
+        var content = new BoxContainer
+        {
+            Orientation = BoxContainer.LayoutOrientation.Vertical,
+            Margin = new Thickness(6),
+            SeparationOverride = 4,
+        };
+        card.AddChild(content);
+        var name = classified ? Loc.GetString("repair-orders-shop-classified") : entity.Name;
+        var preview = new ContainerButton
+        {
+            HorizontalExpand = true,
+            ToolTip = name,
+        };
+        var image = new BoxContainer
+        {
+            Orientation = BoxContainer.LayoutOrientation.Vertical,
+            MouseFilter = MouseFilterMode.Ignore,
+            SeparationOverride = 4,
+        };
+        image.AddChild(CreateShopIcon(entity, classified, 64));
+        image.AddChild(new Label
+        {
+            Text = name,
+            ClipText = true,
+            HorizontalExpand = true,
+            MouseFilter = MouseFilterMode.Ignore,
+        });
+        preview.AddChild(image);
+        preview.OnPressed += _ => OpenShopDetails(reward.ID);
+        content.AddChild(preview);
+        content.AddChild(new Label
+        {
+            Text = Loc.GetString("repair-orders-shop-price", ("cost", reward.Cost)),
+            StyleClasses = { "LabelHeading" },
+            Visible = !classified,
+        });
+        content.AddChild(new Label
+        {
+            Text = Loc.GetString("repair-orders-shop-required-level", ("level", reward.MinimumShopLevel)),
+            FontColorOverride = locked ? Color.Orange : Color.LightGray,
+        });
+        content.AddChild(CreateShopQuantityControls(reward, locked, true));
+        return card;
+    }
+
+    private Control CreateShopIcon(EntityPrototype entity, bool classified, int size)
+    {
+        if (classified)
+            return new Label
+            {
+                Text = Loc.GetString("repair-orders-shop-classified-icon"),
+                SetSize = new Vector2(size, size),
+                HorizontalAlignment = HAlignment.Center,
+                VerticalAlignment = VAlignment.Center,
+                FontColorOverride = Color.Orange,
+                MouseFilter = MouseFilterMode.Ignore,
+            };
+
+        var icon = new EntityPrototypeView
+        {
+            SetSize = new Vector2(size, size),
+            Stretch = SpriteView.StretchMode.Fit,
+            HorizontalAlignment = HAlignment.Center,
+            MouseFilter = MouseFilterMode.Ignore,
+        };
+        icon.SetPrototype(entity.ID);
+        return icon;
+    }
+
+    private Control CreateShopQuantityControls(RepairRewardPrototype reward, bool locked, bool compact)
+    {
+        var id = reward.ID;
+        _shopCart.TryGetValue(id, out var count);
+        var controls = new BoxContainer { SeparationOverride = 4, HorizontalExpand = compact };
+        var remove = new Button
+        {
+            Text = compact ? "−" : Loc.GetString("repair-orders-shop-remove"),
+            ToolTip = Loc.GetString("repair-orders-shop-remove"),
+            Disabled = count == 0 || _shopPurchasePending,
+            MinWidth = 28,
+        };
+        remove.OnPressed += _ => ChangeShopQuantity(id, -1, reward.MaxCount);
+        controls.AddChild(remove);
+        var quantity = new LineEdit
+        {
+            Text = count.ToString(),
+            ToolTip = Loc.GetString("repair-orders-shop-quantity"),
+            SetWidth = compact ? 42 : 48,
+            VerticalAlignment = VAlignment.Center,
+            Editable = !locked && !_shopPurchasePending,
+            IsValid = text => string.IsNullOrEmpty(text) ||
+                                (int.TryParse(text, out var value) && value >= 0 && value <= reward.MaxCount),
+        };
+        controls.AddChild(quantity);
+        var add = new Button
+        {
+            Text = Loc.GetString(compact ? "repair-orders-shop-to-cart" : "repair-orders-shop-add"),
+            Disabled = locked || count >= reward.MaxCount || _shopPurchasePending,
+            HorizontalExpand = compact,
+        };
+        add.Label.ClipText = compact;
+        add.OnPressed += _ => ChangeShopQuantity(id, 1, reward.MaxCount);
+        controls.AddChild(add);
+        quantity.OnTextChanged += args =>
+        {
+            if (_shopPurchasePending || locked)
+                return;
+            var next = int.TryParse(args.Text, out var value) ? value : 0;
+            if (next == 0)
+                _shopCart.Remove(id);
+            else
+                _shopCart[id] = next;
+            remove.Disabled = next == 0 || _shopPurchasePending;
+            add.Disabled = locked || next >= reward.MaxCount || _shopPurchasePending;
+            ShopResultLabel.Text = string.Empty;
+            UpdateShopCart();
+            UpdateShopDetails();
+        };
+        quantity.OnFocusExit += _ => quantity.Text =
+            (_shopCart.TryGetValue(id, out var value) ? value : 0).ToString();
+        return controls;
+    }
+
+    private void OpenShopDetails(string id)
+    {
+        CloseShopDetails();
+        var dialog = new FancyWindow
+        {
+            Title = Loc.GetString("repair-orders-shop-product"),
+            SetSize = new Vector2(420, 360),
+            MinSize = new Vector2(320, 260),
+        };
+        _shopDetailsDialog = dialog;
+        _shopDetailsRewardId = id;
+        dialog.OnClose += () =>
+        {
+            if (ReferenceEquals(_shopDetailsDialog, dialog))
+            {
+                _shopDetailsDialog = null;
+                _shopDetailsRewardId = null;
+            }
+            dialog.Dispose();
+        };
+        UpdateShopDetails();
+        if (_shopDetailsDialog == dialog)
+            dialog.OpenCentered();
+    }
+
+    private void CloseShopDetails()
+    {
+        _shopDetailsDialog?.Dispose();
+        _shopDetailsDialog = null;
+        _shopDetailsRewardId = null;
+    }
+
+    private void UpdateShopDetails()
+    {
+        if (_shopDetailsDialog is not { } dialog || _shopDetailsRewardId is not { } id)
+            return;
+        if (_state == null ||
+            !_prototype.TryIndex<RepairRewardPoolPrototype>(_state.ShopRewardPoolId, out var pool) ||
+            !pool.Rewards.Any(rewardId => rewardId.Id == id) ||
+            !_prototype.TryIndex<RepairRewardPrototype>(id, out var reward) ||
+            reward.EmagOnly && !_state.ShopEmagged ||
+            !_prototype.TryIndex<EntityPrototype>(reward.Entity, out var entity))
+        {
+            CloseShopDetails();
+            return;
+        }
+
+        var locked = _state.ShopLevel < reward.MinimumShopLevel;
+        var classified = reward.Classified && locked;
+        _shopCart.TryGetValue(id, out var count);
+        dialog.ContentsContainer.RemoveAllChildren();
+        var scroll = new ScrollContainer { HScrollEnabled = false, VerticalExpand = true, HorizontalExpand = true };
+        var content = new BoxContainer
+        {
+            Orientation = BoxContainer.LayoutOrientation.Vertical,
+            HorizontalExpand = true,
+            SeparationOverride = 8,
+            Margin = new Thickness(8),
+        };
+        scroll.AddChild(content);
+        dialog.ContentsContainer.AddChild(scroll);
+        content.AddChild(CreateShopIcon(entity, classified, 96));
+        var name = new RichTextLabel();
+        name.SetMessage(classified ? Loc.GetString("repair-orders-shop-classified") : entity.Name);
+        content.AddChild(name);
+        var description = new RichTextLabel();
+        description.SetMessage(classified
+            ? Loc.GetString("repair-orders-shop-classified-details", ("level", reward.MinimumShopLevel))
+            : entity.Description);
+        content.AddChild(description);
+        content.AddChild(new Label
+        {
+            Text = Loc.GetString("repair-orders-shop-price", ("cost", reward.Cost)),
+            Visible = !classified,
+        });
+        content.AddChild(new Label
+        {
+            Text = Loc.GetString("repair-orders-shop-required-level", ("level", reward.MinimumShopLevel)),
+            FontColorOverride = locked ? Color.Orange : Color.LightGray,
+        });
+        var limit = new RichTextLabel();
+        limit.SetMessage(Loc.GetString("repair-orders-shop-purchase-limit", ("count", reward.MaxCount)));
+        content.AddChild(limit);
+        content.AddChild(new Label
+        {
+            Text = Loc.GetString("repair-orders-shop-in-cart", ("count", count)),
+        });
+        var add = new Button
+        {
+            Text = Loc.GetString("repair-orders-shop-to-cart"),
+            Disabled = locked || count >= reward.MaxCount || _shopPurchasePending,
+        };
+        add.OnPressed += _ => ChangeShopQuantity(id, 1, reward.MaxCount);
+        content.AddChild(add);
+    }
+
+    private void UpdateShopCart()
+    {
+        if (_state == null || !_prototype.TryIndex<RepairRewardPoolPrototype>(_state.ShopRewardPoolId, out var pool))
+            return;
+
+        ShopCartContainer.RemoveAllChildren();
+        long total = 0;
+        var valid = true;
+        foreach (var rewardId in pool.Rewards)
+        {
+            if (!_shopCart.TryGetValue(rewardId.Id, out var count) || count <= 0 ||
+                !_prototype.TryIndex<RepairRewardPrototype>(rewardId, out var reward) ||
+                !_prototype.TryIndex<EntityPrototype>(reward.Entity, out var entity))
+                continue;
+
+            if (reward.EmagOnly && !_state.ShopEmagged)
+            {
+                valid = false;
+                continue;
+            }
+
+            valid &= count <= reward.MaxCount && _state.ShopLevel >= reward.MinimumShopLevel;
+
+            // Two int values always multiply within long; guard the running sum explicitly.
+            var lineCost = (long) reward.Cost * count;
+            total = lineCost > long.MaxValue - total ? long.MaxValue : total + lineCost;
+
+            ShopCartContainer.AddChild(new Label
+            {
+                Text = Loc.GetString("repair-orders-shop-cart-line",
+                    ("name", entity.Name), ("count", count), ("cost", lineCost)),
+            });
+        }
+
+        if (_shopCart.Count == 0)
+            ShopCartContainer.AddChild(new Label { Text = Loc.GetString("repair-orders-shop-cart-empty") });
+
+        ShopTotalLabel.Text = Loc.GetString("repair-orders-shop-total", ("total", total));
+        ShopCheckoutButton.Disabled = _shopCart.Count == 0 || _shopPurchasePending ||
+                                      _state.ShopPurchaseInProgress || !valid || total > _state.RepairPoints;
+    }
+
+    private void ChangeShopQuantity(string id, int delta, int maxCount)
+    {
+        if (_shopPurchasePending)
+            return;
+        _shopCart.TryGetValue(id, out var current);
+        var next = (int) Math.Clamp((long) current + delta, 0, maxCount);
+        if (next == 0)
+            _shopCart.Remove(id);
+        else
+            _shopCart[id] = next;
+
+        ShopResultLabel.Text = string.Empty;
+        UpdateShop();
+    }
+
+    private void SubmitShopPurchase()
+    {
+        if (_shopPurchasePending || ShopCheckoutButton.Disabled || _shopCart.Count == 0)
+            return;
+
+        var requestId = Guid.NewGuid().ToString("N");
+        var lines = _shopCart
+            .Select(line => new RepairOrderRewardBuiEntry(line.Key, line.Value))
+            .ToList();
+        _draft.PendingLines = lines;
+        _draft.PendingRequestId = requestId;
+        ShopResultLabel.Text = Loc.GetString("repair-orders-shop-processing");
+        OnShopPurchase?.Invoke(requestId, lines.ToList());
+        UpdateShop();
+    }
+
+    private void RequestCompletion(int runtimeId)
+    {
+        if (_state?.Active is not { } active || active.RuntimeId != runtimeId ||
+            !active.BlueprintReady || _state.Completing || active.ExpiresAt <= _timing.CurTime)
+            return;
+
+        if (_state.Worklist.Count == 0)
+        {
+            OnComplete?.Invoke(runtimeId, false);
+            return;
+        }
+
+        if (!CanSubmitEarly(active))
+            return;
+
+        _completionDialog?.Dispose();
+        var dialog = new FancyWindow
+        {
+            Title = Loc.GetString("repair-orders-submit-early"),
+            MinWidth = 400,
+        };
+        _completionDialog = dialog;
+        dialog.OnClose += () =>
+        {
+            if (ReferenceEquals(_completionDialog, dialog))
+                _completionDialog = null;
+            dialog.Dispose();
+        };
+        var content = new BoxContainer
+        {
+            Orientation = BoxContainer.LayoutOrientation.Vertical,
+            SeparationOverride = 8,
+            Margin = new Thickness(8),
+        };
+        var summary = new RichTextLabel { MaxWidth = 460 };
+        summary.SetMessage(Loc.GetString("repair-orders-submit-early-confirm",
+            ("percent", RepairOrderProgress.CalculatePercent(active.CompletedTasks, active.TotalTasks)),
+            ("points", active.Exclusions.FinalPoints)));
+        content.AddChild(summary);
+        var confirm = new Button { Text = Loc.GetString("repair-orders-submit-early-button") };
+        confirm.OnPressed += _ =>
+        {
+            if (_state?.Active is not { } current || current.RuntimeId != runtimeId ||
+                !current.BlueprintReady || _state.Completing || current.ExpiresAt <= _timing.CurTime ||
+                (_state.Worklist.Count > 0 && !CanSubmitEarly(current)))
+                return;
+
+            confirm.Disabled = true;
+            OnComplete?.Invoke(runtimeId, true);
+            dialog.Close();
+        };
+        content.AddChild(confirm);
+        var cancel = new Button { Text = Loc.GetString("repair-orders-waiver-back") };
+        cancel.OnPressed += _ => dialog.Close();
+        content.AddChild(cancel);
+        dialog.ContentsContainer.AddChild(content);
+        dialog.OpenCentered();
     }
 
     protected override void FrameUpdate(FrameEventArgs args)
@@ -351,12 +955,13 @@ public sealed partial class RepairOrderWindow : FancyWindow
 
             var complete = new Button
             {
-                Text = Loc.GetString("repair-orders-submit"),
+                Text = Loc.GetString(_state?.Worklist.Count > 0 ? "repair-orders-submit-early" : "repair-orders-submit"),
                 HorizontalAlignment = HAlignment.Right,
                 HorizontalExpand = true,
-                Disabled = !entry.BlueprintReady || _state?.Completing == true,
+                Disabled = !entry.BlueprintReady || _state?.Completing == true ||
+                           (_state?.Worklist.Count > 0 && !CanSubmitEarly(entry)),
             };
-            complete.OnPressed += _ => OnComplete?.Invoke(entry.RuntimeId);
+            complete.OnPressed += _ => RequestCompletion(entry.RuntimeId);
             actions.AddChild(complete);
             if (_activeControls is { } activeControls)
                 _activeControls = (activeControls.ExpiresAt, activeControls.Timer, complete);
@@ -442,16 +1047,6 @@ public sealed partial class RepairOrderWindow : FancyWindow
         AddDamageSummary(content, entry.DamageEvents);
         AddExclusions(content, entry.Exclusions);
 
-        if (entry.Rewards.Count > 0)
-        {
-            content.AddChild(new Label
-            {
-                Text = Loc.GetString(entry.Delivered
-                    ? "repair-orders-rewards-delivered"
-                    : "repair-orders-rewards-not-delivered"),
-                FontColorOverride = entry.Delivered ? Color.LightGreen : Color.Orange,
-            });
-        }
         content.AddChild(new Label
         {
             Text = Loc.GetString(
@@ -470,38 +1065,14 @@ public sealed partial class RepairOrderWindow : FancyWindow
         });
         content.AddChild(new Label
         {
-            Text = Loc.GetString("repair-orders-rewards-heading"),
-            FontColorOverride = Color.LightGray,
+            Text = Loc.GetString("repair-orders-earned-points", ("points", entry.RewardBudget)),
+            FontColorOverride = Color.LightGreen,
         });
-
-        if (entry.Rewards.Count == 0)
+        content.AddChild(new Label
         {
-            content.AddChild(new Label
-            {
-                Text = Loc.GetString("repair-orders-no-rewards"),
-                FontColorOverride = Color.Gray,
-            });
-        }
-        else
-        {
-            foreach (var rewardEntry in entry.Rewards)
-            {
-                var rewardName = rewardEntry.RewardPrototypeId;
-                if (_prototype.TryIndex<RepairRewardPrototype>(rewardEntry.RewardPrototypeId, out var reward) &&
-                    _prototype.TryIndex<EntityPrototype>(reward.Entity, out var entity))
-                {
-                    rewardName = entity.Name;
-                }
-
-                content.AddChild(new Label
-                {
-                    Text = Loc.GetString(
-                        "repair-orders-reward-line",
-                        ("reward", rewardName),
-                        ("count", rewardEntry.Count)),
-                });
-            }
-        }
+            Text = Loc.GetString("repair-orders-earned-reputation", ("reputation", entry.EarnedReputation)),
+            FontColorOverride = Color.LightGreen,
+        });
 
         var print = new Button
         {
@@ -544,10 +1115,20 @@ public sealed partial class RepairOrderWindow : FancyWindow
             activeControls.Timer.Text = Loc.GetString(
                 "repair-orders-time-remaining",
                 ("time", FormatRemaining(remaining)));
-            activeControls.Complete.Disabled = _state.Completing ||
-                                               !_state.Active!.BlueprintReady ||
-                                               remaining <= TimeSpan.Zero;
+            var active = _state.Active!;
+            var unfinished = _state.Worklist.Count > 0;
+            var waiting = unfinished && !CanSubmitEarly(active);
+            activeControls.Complete.Text = waiting && active.EarlySubmissionAvailableAt is { } availableAt
+                ? Loc.GetString("repair-orders-submit-early-wait", ("time", FormatRemaining(availableAt - _timing.CurTime)))
+                : Loc.GetString(unfinished ? "repair-orders-submit-early" : "repair-orders-submit");
+            activeControls.Complete.Disabled = _state.Completing || !active.BlueprintReady ||
+                                               remaining <= TimeSpan.Zero || waiting;
         }
+    }
+
+    private bool CanSubmitEarly(RepairOrderBuiEntry entry)
+    {
+        return entry.EarlySubmissionAvailableAt is { } availableAt && _timing.CurTime >= availableAt;
     }
 
     private static string FormatRemaining(TimeSpan remaining)

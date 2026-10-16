@@ -2,9 +2,11 @@
 
 using System.Linq;
 using Content.Server.Popups;
+using Content.Server.Shuttles.Systems;
 using Content.Server.Station.Systems;
 using Content.Shared.Access.Systems;
 using Content.Shared.DeadSpace._Soyuz.RepairOrders;
+using Content.Shared.Emag.Systems;
 using Content.Shared.Ghost;
 using Content.Shared.Popups;
 using Content.Shared.Prototypes;
@@ -30,9 +32,11 @@ public sealed class RepairOrderSystem : EntitySystem
     [Dependency] private readonly IPrototypeManager _prototype = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly AccessReaderSystem _access = default!;
+    [Dependency] private readonly EmagSystem _emag = default!;
     [Dependency] private readonly PopupSystem _popup = default!;
     [Dependency] private readonly RepairOrderSpawnSystem _spawn = default!;
     [Dependency] private readonly RepairOrderValidationSystem _validation = default!;
+    [Dependency] private readonly DockingSystem _docking = default!;
     [Dependency] private readonly SharedTransformSystem _transform = default!;
     [Dependency] private readonly StationSystem _station = default!;
     [Dependency] private readonly UserInterfaceSystem _ui = default!;
@@ -47,6 +51,7 @@ public sealed class RepairOrderSystem : EntitySystem
         _sawmill = _logManager.GetSawmill("repair_orders");
 
         SubscribeLocalEvent<RepairOrderConsoleComponent, ComponentStartup>(OnConsoleStartup);
+        SubscribeLocalEvent<RepairOrderConsoleComponent, GotEmaggedEvent>(OnConsoleEmagged);
         SubscribeLocalEvent<RepairOrderStationComponent, ComponentShutdown>(OnStationShutdown);
         SubscribeLocalEvent<RepairOrderConsoleComponent, ActivatableUIOpenAttemptEvent>(OnOpenAttempt);
         Subs.BuiEvents<RepairOrderConsoleComponent>(RepairOrderUiKey.Key, subs =>
@@ -96,6 +101,19 @@ public sealed class RepairOrderSystem : EntitySystem
     private void OnConsoleStartup(Entity<RepairOrderConsoleComponent> console, ref ComponentStartup args)
     {
         EnsureStationState(console.Owner);
+    }
+
+    private void OnConsoleEmagged(Entity<RepairOrderConsoleComponent> console, ref GotEmaggedEvent args)
+    {
+        if (!_emag.CompareFlag(args.Type, EmagType.Interaction) ||
+            _emag.CheckFlag(console.Owner, EmagType.Interaction) ||
+            !_prototype.TryIndex<RepairRewardPoolPrototype>(console.Comp.ShopRewardPool, out var pool) ||
+            !pool.Rewards.Any(id => _prototype.TryIndex<RepairRewardPrototype>(id, out var reward) && reward.EmagOnly) ||
+            EnsureStationState(console.Owner) is not { } station || station.Comp.ShopPurchaseInProgress)
+            return;
+
+        args.Handled = true;
+        UpdateConsoleUi(console.Owner, station, contrabandUnlocked: true);
     }
 
     private void OnOpenAttempt(Entity<RepairOrderConsoleComponent> console, ref ActivatableUIOpenAttemptEvent args)
@@ -185,7 +203,7 @@ public sealed class RepairOrderSystem : EntitySystem
                 ? coordinates
                 : state.LastRepairConsoleCoordinates;
 
-            // Authoritative commit: publish the complete session and its reward fallback coordinates together.
+            // Authoritative commit: publish the complete session and its fallback coordinates together.
             // No callbacks or other potentially throwing preparation belong past this boundary.
             if (!state.Available.Remove(offer.RuntimeId))
             {
@@ -215,7 +233,10 @@ public sealed class RepairOrderSystem : EntitySystem
                     finally
                     {
                         if (Exists(rollbackGrid))
+                        {
+                            UndockRepairGrid(rollbackGrid);
                             Del(rollbackGrid);
+                        }
                     }
                 }
             }
@@ -297,7 +318,7 @@ public sealed class RepairOrderSystem : EntitySystem
                 finally
                 {
                     if (Exists(grid) && MetaData(grid).EntityLifeStage < EntityLifeStage.Terminating)
-                        QueueDel(grid);
+                        QueueDeleteRepairGrid(grid);
                 }
             });
         }
@@ -318,10 +339,6 @@ public sealed class RepairOrderSystem : EntitySystem
         return (stationUid.Value, state);
     }
 
-    /// <summary>
-    /// Remembers a usable repair-orders console as grid-local station coordinates. Returns false for deleted,
-    /// nullspace, off-grid, or foreign-station consoles without replacing the previous known position.
-    /// </summary>
     public bool RememberRepairConsole(EntityUid stationUid, EntityUid consoleUid)
     {
         if (!TryComp<RepairOrderStationComponent>(stationUid, out var state))
@@ -339,10 +356,7 @@ public sealed class RepairOrderSystem : EntitySystem
         return true;
     }
 
-    private bool TryGetRepairConsoleCoordinates(
-        EntityUid stationUid,
-        EntityUid consoleUid,
-        out EntityCoordinates coordinates)
+    private bool TryGetRepairConsoleCoordinates(EntityUid stationUid, EntityUid consoleUid, out EntityCoordinates coordinates)
     {
         coordinates = EntityCoordinates.Invalid;
         if (!consoleUid.IsValid() ||
@@ -355,15 +369,10 @@ public sealed class RepairOrderSystem : EntitySystem
             !Exists(gridUid) ||
             MetaData(gridUid).EntityLifeStage >= EntityLifeStage.Terminating ||
             _station.GetOwningStation(consoleUid, transform) != stationUid)
-        {
             return false;
-        }
 
         coordinates = _transform.GetMoverCoordinates(consoleUid, transform);
-        if (coordinates == EntityCoordinates.Invalid || coordinates.EntityId != gridUid)
-            return false;
-
-        return true;
+        return coordinates != EntityCoordinates.Invalid && coordinates.EntityId == gridUid;
     }
 
     private void InitializeStation(Entity<RepairOrderStationComponent> station)
@@ -446,7 +455,11 @@ public sealed class RepairOrderSystem : EntitySystem
         if (!TryComp<RepairOrderStationComponent>(stationUid, out var state) ||
             !ReferenceEquals(state.Active, expectedActive) ||
             completed.RuntimeId != expectedActive.RuntimeId ||
-            completed.Prototype != expectedActive.Prototype)
+            completed.Prototype != expectedActive.Prototype ||
+            completed.RewardBudget < 0 ||
+            completed.EarnedReputation < 0 ||
+            state.RepairPoints > long.MaxValue - completed.RewardBudget ||
+            state.EngineeringReputation > long.MaxValue - completed.EarnedReputation)
         {
             return false;
         }
@@ -454,6 +467,8 @@ public sealed class RepairOrderSystem : EntitySystem
         repairGrid = expectedActive.GridUid;
         completed.DamageGeneration = expectedActive.DamageGeneration;
         completed.Exclusions = expectedActive.Exclusions;
+        state.RepairPoints += completed.RewardBudget;
+        state.EngineeringReputation += completed.EarnedReputation;
         state.Completed = completed;
         state.Active = null;
         return true;
@@ -518,7 +533,7 @@ public sealed class RepairOrderSystem : EntitySystem
                 foreach (var gridUid in ownedGrids)
                 {
                     if (Exists(gridUid) && MetaData(gridUid).EntityLifeStage < EntityLifeStage.Terminating)
-                        QueueDel(gridUid);
+                        QueueDeleteRepairGrid(gridUid);
                 }
             }
             finally
@@ -552,7 +567,7 @@ public sealed class RepairOrderSystem : EntitySystem
 
         _validation.DiscardPreparedSession(gridUid);
         if (Exists(gridUid) && MetaData(gridUid).EntityLifeStage < EntityLifeStage.Terminating)
-            QueueDel(gridUid);
+            QueueDeleteRepairGrid(gridUid);
     }
 
     /// <summary>
@@ -625,8 +640,20 @@ public sealed class RepairOrderSystem : EntitySystem
 
             _validation.DiscardPreparedSession(gridUid);
             if (Exists(gridUid) && MetaData(gridUid).EntityLifeStage < EntityLifeStage.Terminating)
-                QueueDel(gridUid);
+                QueueDeleteRepairGrid(gridUid);
         }
+    }
+
+    private void QueueDeleteRepairGrid(EntityUid gridUid)
+    {
+        UndockRepairGrid(gridUid);
+        QueueDel(gridUid);
+    }
+
+    private void UndockRepairGrid(EntityUid gridUid)
+    {
+        foreach (var dock in _docking.GetDocks(gridUid))
+            _docking.Undock(dock);
     }
 
     private void UpdateStationUis(Entity<RepairOrderStationComponent> station)
@@ -641,7 +668,8 @@ public sealed class RepairOrderSystem : EntitySystem
         }
     }
 
-    private void UpdateConsoleUi(EntityUid console, Entity<RepairOrderStationComponent> station)
+    private void UpdateConsoleUi(EntityUid console, Entity<RepairOrderStationComponent> station,
+        bool contrabandUnlocked = false)
     {
         var available = station.Comp.Available.Values
             .OrderBy(offer => offer.RuntimeId)
@@ -669,7 +697,8 @@ public sealed class RepairOrderSystem : EntitySystem
                 currentPoints: activeOrder.CurrentPoints,
                 maxPoints: activeOrder.MaxPoints,
                 damageEvents: activeOrder.DamageGeneration?.SelectedEvents.ToArray(),
-                exclusions: activeOrder.Exclusions?.Totals ?? new RepairExclusionTotals(0, 0, RepairTechnicalExclusion.MaxWaivedPoints(activeOrder.MaxPoints), activeOrder.CurrentPoints));
+                exclusions: activeOrder.Exclusions?.Totals ?? new RepairExclusionTotals(0, 0, RepairTechnicalExclusion.MaxWaivedPoints(activeOrder.MaxPoints), activeOrder.CurrentPoints),
+                earlySubmissionAvailableAt: activeOrder.StartedAt + RepairOrderProgress.EarlySubmissionDelay);
         }
 
         RepairOrderCompletedBuiEntry? completed = null;
@@ -684,13 +713,20 @@ public sealed class RepairOrderSystem : EntitySystem
                 completedOrder.MaxPoints,
                 completedOrder.RepairPercent,
                 completedOrder.RewardBudget,
+                completedOrder.EarnedReputation,
                 completedOrder.Result,
-                completedOrder.Delivered,
-                completedOrder.Rewards
-                    .Select(reward => new RepairOrderRewardBuiEntry(reward.Reward.Id, reward.Count))
-                    .ToList(),
                 completedOrder.DamageGeneration?.SelectedEvents.ToArray(),
                 completedOrder.Exclusions?.Totals ?? new RepairExclusionTotals(0, 0, RepairTechnicalExclusion.MaxWaivedPoints(completedOrder.MaxPoints), completedOrder.FinalPoints));
+        }
+
+        var shopPoolId = Comp<RepairOrderConsoleComponent>(console).ShopRewardPool;
+        var shopLevel = 0;
+        int? nextShopLevelThreshold = null;
+        if (_prototype.TryIndex<RepairRewardPoolPrototype>(shopPoolId, out var shopPool))
+        {
+            shopLevel = RepairOrderRewardSystem.GetShopLevel(shopPool, station.Comp.EngineeringReputation);
+            if (shopLevel < shopPool.ShopLevelThresholds.Count)
+                nextShopLevelThreshold = shopPool.ShopLevelThresholds[shopLevel];
         }
 
         _ui.SetUiState(console, RepairOrderUiKey.Key, new RepairOrderBoundUserInterfaceState(
@@ -701,7 +737,14 @@ public sealed class RepairOrderSystem : EntitySystem
             station.Comp.NextOffer,
             station.Comp.OfferInterval,
             station.Comp.Accepting,
-            station.Comp.Completing));
+            station.Comp.Completing,
+            shopPoolId.Id,
+            station.Comp.RepairPoints,
+            station.Comp.EngineeringReputation,
+            shopLevel,
+            nextShopLevelThreshold,
+            station.Comp.ShopPurchaseInProgress,
+            contrabandUnlocked || _emag.CheckFlag(console, EmagType.Interaction)));
     }
 
     private void FailRequest(EntityUid console, EntityUid actor, string locKey, string logReason)

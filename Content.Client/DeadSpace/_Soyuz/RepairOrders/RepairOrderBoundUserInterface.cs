@@ -16,10 +16,14 @@ public sealed class RepairOrderBoundUserInterface : BoundUserInterface
     {
         base.Open();
 
-        _window = new RepairOrderWindow();
+        var draft = PlayerManager.LocalEntity is { } actor
+            ? EntMan.System<RepairOrderShopSystem>().GetDraft(Owner, actor)
+            : new RepairOrderShopDraft();
+        _window = new RepairOrderWindow(draft);
         _window.OnAccept += runtimeId => SendMessage(new RepairOrderAcceptMessage(runtimeId));
-        _window.OnComplete += runtimeId => SendMessage(new RepairOrderCompleteMessage(runtimeId));
+        _window.OnComplete += (runtimeId, allowIncomplete) => SendMessage(new RepairOrderCompleteMessage(runtimeId, allowIncomplete));
         _window.OnPrintReport += runtimeId => SendMessage(new RepairOrderPrintReportMessage(runtimeId));
+        _window.OnShopPurchase += (requestId, lines) => SendMessage(new RepairOrderShopPurchaseMessage(requestId, lines));
         _window.OnClose += Close;
         _window.OpenCentered();
     }
@@ -32,6 +36,13 @@ public sealed class RepairOrderBoundUserInterface : BoundUserInterface
             _window?.UpdateState(repairState);
     }
 
+    protected override void ReceiveMessage(BoundUserInterfaceMessage message)
+    {
+        base.ReceiveMessage(message);
+        if (message is RepairOrderShopResultMessage result)
+            _window?.ShowShopResult(result);
+    }
+
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
@@ -39,6 +50,7 @@ public sealed class RepairOrderBoundUserInterface : BoundUserInterface
         if (!disposing)
             return;
 
+        _window?.SaveDraft();
         _window?.Close();
         _window?.Dispose();
     }

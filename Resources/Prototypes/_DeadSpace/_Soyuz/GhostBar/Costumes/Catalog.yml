@@ -112,14 +112,14 @@
 
 - type: ghostBarCostume
   id: CoatBlue
-  name: ghost-bar-costume-ClothingHeadHatBeretGhostBarBlue
+  name: ghost-bar-costume-ClothingOuterCoatGhostBarBlue
   category: outer
   clothingProto: ClothingOuterCoatGhostBarBlue
   slot: outerClothing
 
 - type: ghostBarCostume
   id: CoatOrange
-  name: ghost-bar-costume-ClothingHeadHatBeretGhostBarOrange
+  name: ghost-bar-costume-ClothingOuterCoatGhostBarOrange
   category: outer
   clothingProto: ClothingOuterCoatGhostBarOrange
   slot: outerClothing
@@ -151,4 +151,25 @@
   name: ghost-bar-costume-ClothingNeckGhostBarWhiteScarf
   category: neck
   clothingProto: ClothingNeckGhostBarWhiteScarf
+  slot: neck
+
+- type: ghostBarCostume
+  id: BlueMantleShoulder
+  name: ghost-bar-costume-ClothingNeckGhostBarBlueMantleShoulder
+  category: neck
+  clothingProto: ClothingNeckGhostBarBlueMantleShoulder
+  slot: neck
+
+- type: ghostBarCostume
+  id: OrangeMantleShoulder
+  name: ghost-bar-costume-ClothingNeckGhostBarOrangeMantleShoulder
+  category: neck
+  clothingProto: ClothingNeckGhostBarOrangeMantleShoulder
+  slot: neck
+
+- type: ghostBarCostume
+  id: VioletMantleShoulder
+  name: ghost-bar-costume-ClothingNeckGhostBarVioletMantleShoulder
+  category: neck
+  clothingProto: ClothingNeckGhostBarVioletMantleShoulder
   slot: neck
