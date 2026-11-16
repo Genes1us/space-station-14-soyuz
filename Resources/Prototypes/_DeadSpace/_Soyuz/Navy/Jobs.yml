@@ -1,0 +1,208 @@
+- type: job
+  id: NavyCaptain
+  name: job-name-navy-captain
+  description: job-description-navy-captain
+  playTimeTracker: JobNavyCaptain
+  setPreference: false
+  startingGear: NavyCaptainGear
+  icon: "JobIconNavyCaptain"
+  supervisors: job-supervisors-navy-captain
+  canBeAntag: false
+  accessGroups:
+  - AllAccess
+  - NavyAll
+  access:
+  - CentralCommand
+  - ErtTeamLeader
+  special:
+  - !type:AddImplantSpecial
+    implants: [ MindShieldImplant, TrackingImplant, DeathRattleImplantNKO, AntiAlcoholImplant ]
+
+- type: startingGear
+  id: NavyCaptainGear
+  equipment:
+    back: ClothingSatchelNavyCaptain
+    jumpsuit: ClothingUniformJumpsuitNavyCaptain
+    mask: ClothingMaskGasSwat
+    eyes: ClothingEyesGlassesAdvancedOKGB
+    ears: ClothingHeadsetNKOCaptainAlt
+    gloves: ClothingHandsGlovesCombat
+    outerClothing: ClothingOuterHardsuitNavyCaptain
+    shoes: ClothingShoesBootsMagNavy
+# Доделать
+    head: ClothingHeadHelmetERTLeader
+    id: ERTLeaderPDA
+    belt: ClothingBeltERTSecurityFilled
+    neck: ClothingNeckMantleERTLeader
+    pocket1: DoubleEmergencyOxygenTankFilled
+    pocket2: KukriKnife
+  storage:
+    back:
+    - ERTloadoutAmberSecondary
+    - ERTloadoutAmberPrimary
+    - BoxMRE
+    - WeaponDisabler
+    - CrowbarRed
+    - FlashlightSeclite
+    - ADTtelescopicBaton
+    - PinpointerNuclear
+    - Flash
+    - Flare
+    - EmergencyMedipen
+    - Truncheon
+
+
+- type: job
+  id: NavyOfficer
+  name: job-name-navy-officer
+  description: job-description-navy-officer
+  playTimeTracker: JobNavyOfficer
+  setPreference: false
+  startingGear: NavyOfficerGear
+  icon: "JobIconNavyOfficer"
+  supervisors: job-supervisors-navy
+  canBeAntag: false
+  accessGroups:
+  - AllAccess
+  access:
+  - CentralCommand
+  - NavyOfficer
+  - Navy
+  special:
+  - !type:AddImplantSpecial
+    implants: [ MindShieldImplant, TrackingImplant, DeathRattleImplantNKO, AntiAlcoholImplant ]
+
+- type: startingGear
+  id: NavyOfficerGear
+  equipment:
+    back: ClothingSatchelNavy
+    jumpsuit: ClothingUniformJumpsuitNavy
+    mask: ClothingMaskGasSwat
+    eyes: ClothingEyesGlassesAdvancedOKGB
+    ears: ClothingHeadsetNKO
+    gloves: ClothingHandsGlovesCombat
+    outerClothing: ClothingOuterHardsuitNavyOfficer
+    shoes: ClothingShoesBootsMagNavy
+# Доделать
+    head: ClothingHeadHelmetERTSecurity
+    id: ERTSecurityIDCard
+    belt: ClothingBeltERTSecurityFilled
+    pocket1: DoubleEmergencyOxygenTankFilled
+    pocket2: KukriKnife
+  storage:
+    back:
+    - TelescopicShield
+    - FlashlightSeclite
+    - WeaponDisabler
+    - CrowbarRed
+    - EmergencyMedipen
+    - BoxMRE
+    - ERTloadoutAmberSecondary
+    - ERTloadoutAmberPrimary
+    - Flare
+    - Truncheon
+
+
+- type: job
+  id: NavyMedical
+  name: job-name-navy-medical
+  description: job-description-navy-medical
+  playTimeTracker: JobNavyMedical
+  setPreference: false
+  startingGear: NavyMedicalGear
+  icon: "JobIconNavyMedical"
+  supervisors: job-supervisors-navy
+  canBeAntag: false
+  accessGroups:
+  - AllAccess
+  access:
+  - CentralCommand
+  - NavyMedical
+  - Navy
+  special:
+  - !type:AddImplantSpecial
+    implants: [ MindShieldImplant, TrackingImplant, DeathRattleImplantNKO, AntiAlcoholImplant ]
+
+- type: startingGear
+  id: NavyMedicalGear
+  equipment:
+    back: ClothingSatchelNavyMedical
+    jumpsuit: ClothingUniformJumpsuitNavyMedical
+    mask: ClothingMaskGasSwat
+    eyes: ClothingEyesGlassesAdvancedOKGB
+    ears: ClothingHeadsetNKO
+    gloves: ClothingHandsGlovesCombat
+    outerClothing: ClothingOuterHardsuitNavyNedical
+    shoes: ClothingShoesBootsMagNavy
+# Доделать
+    head: ClothingHeadHelmetERTMedic
+    id: ERTMedicIDCard
+    belt: ClothingBeltMedicalFilled
+    pocket1: DoubleEmergencyOxygenTankFilled
+    pocket2: KukriKnife
+  storage:
+    back:
+    - Defibrillator
+    - BoxMRE
+    - ERTloadoutAmberPrimary
+    - ERTloadoutAmberSecondary
+    - Flare
+    - WeaponDisabler
+    - HandheldHealthAnalyzer
+    - ChemistryBottleOmnizine
+    - ChemistryBottleEpinephrine
+    - Cautery
+    - FlashlightLantern
+    - CrowbarRed
+    - ADTCombatHypo
+    - EmergencyMedipen
+
+
+- type: job
+  id: NavyEngineer
+  name: job-name-navy-engineer
+  description: job-description-navy-engineer
+  playTimeTracker: JobNavyEngineer
+  setPreference: false
+  startingGear: NavyEngineerGear
+  icon: "JobIconNavyEngineer"
+  supervisors: job-supervisors-navy
+  canBeAntag: false
+  accessGroups:
+  - AllAccess
+  access:
+  - CentralCommand
+  - NavyEngineering
+  - Navy
+  special:
+  - !type:AddImplantSpecial
+    implants: [ MindShieldImplant, TrackingImplant, DeathRattleImplantNKO, AntiAlcoholImplant ]
+
+- type: startingGear
+  id: NavyEngineerGear
+  equipment:
+    back: ClothingSatchelsNavyEngineer
+    jumpsuit: ClothingUniformJumpsuitNavyEngineer
+    mask: ClothingMaskGasSwat
+    eyes: ClothingEyesGlassesAdvancedOKGB
+    ears: ClothingHeadsetNKO
+    gloves: ClothingHandsGlovesCombat
+    outerClothing: ClothingOuterHardsuitNavyEngineer
+    shoes: ClothingShoesBootsMagNavy
+# Доделать
+    head: ClothingHeadHelmetERTEngineer
+    id: ERTEngineerIDCard
+    belt: ClothingUtilityWebbingEngineering
+    pocket1: DoubleEmergencyOxygenTankFilled
+    pocket2: KukriKnife
+  storage:
+    back:
+    - FlashlightLantern
+    - WeaponDisabler
+    - EmergencyMedipen
+    - BoxMRE
+    - ERTloadoutAmberSecondary
+    - ERTloadoutAmberPrimary
+    - Flare
+    - RCD
+    - RCDAmmo
