@@ -1,0 +1,47 @@
+- type: rank
+  id: NavyNKOAdmiralOfFlot
+  name: Адмирал Флота
+  prefix: Адмирал Флота
+  paygrade: НКО8
+
+- type: rank
+  id: NavyNKOCaptainOneClass
+  name: Капитан 1-ранга
+  prefix: Капитан 1-ранга
+  paygrade: НКО7
+
+- type: rank
+  id: NavyNKOCaptainTwoClass
+  name: Капитан 2-ранга
+  prefix: Капитан 2-ранга
+  paygrade: НКО6
+
+- type: rank
+  id: NavyNKOCaptainThreeClass
+  name: Капитан 3-ранга
+  prefix: Капитан 3-ранга
+  paygrade: НКО5
+
+- type: rank
+  id: NavyNKOMichmanHead
+  name: Старший Мичман
+  prefix: Старший Мичман
+  paygrade: НКО4
+
+- type: rank
+  id: NavyNKOMichman
+  name: Мичман
+  prefix: Мичман
+  paygrade: НКО3
+
+- type: rank
+  id: NavyNKOForemanOneClass
+  name: Старшина 1-статьи
+  prefix: Старшина 1-статьи
+  paygrade: НКО2
+
+- type: rank
+  id: NavyNKOForemanTwoClass
+  name: Старшина 2-статьи
+  prefix: Старшина 2-статьи
+  paygrade: НКО1

@@ -14,6 +14,7 @@
     state: Politkom
   jobName: job-name-Politkom
 
+# Navy
 - type: jobIcon
   parent: JobIcon
   id: JobIconNavyCaptain

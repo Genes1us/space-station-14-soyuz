@@ -7,7 +7,6 @@
     - type: RandomHumanoidSpawner
       settings: PolitOtdelPolitRuk
 
-
 - type: entity
   id: RandomHumanoidSpawnerPolitkom
   components:
@@ -33,18 +32,19 @@
       prototypes: [ PolitkomGear ]
       roleLoadout: [ RoleSurvivalStandard ]      
 
+
 # Navy
 ## Captain
 - type: entity
   id: RandomHumanoidSpawnerNavyCaptain
   name: капитан ВКФ
+  suffix: Рейнхейт, ВКФ
   components:
     - type: Sprite
       sprite: _DeadSpace/_Soyuz/Markers/jobs.rsi
       state: nanotrasen_navy_captain
     - type: RandomMetadata
       nameSegments:
-      - NamesFirstNavyCaptain
       - NamesLastNavy
       nameFormat: name-format-ert
     - type: RandomHumanoidSpawner
@@ -76,7 +76,6 @@
       prototypes: [ NavyCaptainGear ]
     - type: RandomMetadata
       nameSegments:
-      - NamesFirstNavyCaptain
       - NamesLastNavy
       nameFormat: name-format-ert
 
@@ -84,13 +83,13 @@
 - type: entity
   id: RandomHumanoidSpawnerNavyOfficer
   name: офицер ВКФ
+  suffix: Рейнхейт, ВКФ
   components:
     - type: Sprite
       sprite: _DeadSpace/_Soyuz/Markers/jobs.rsi
       state: nanotrasen_navy_officer
     - type: RandomMetadata
       nameSegments:
-      - NamesFirstNavy
       - NamesLastNavy
       nameFormat: name-format-ert
     - type: RandomHumanoidSpawner
@@ -122,7 +121,6 @@
       prototypes: [ NavyOfficerGear ]
     - type: RandomMetadata
       nameSegments:
-      - NamesFirstNavyCaptain
       - NamesLastNavy
       nameFormat: name-format-ert
 
@@ -130,13 +128,13 @@
 - type: entity
   id: RandomHumanoidSpawnerNavyMedical
   name: медик ВКФ
+  suffix: Рейнхейт, ВКФ
   components:
     - type: Sprite
       sprite: _DeadSpace/_Soyuz/Markers/jobs.rsi
       state: nanotrasen_navy_medical
     - type: RandomMetadata
       nameSegments:
-      - NamesFirstNavy
       - NamesLastNavy
       nameFormat: name-format-ert
     - type: RandomHumanoidSpawner
@@ -168,7 +166,6 @@
       prototypes: [ NavyMedicalGear ]
     - type: RandomMetadata
       nameSegments:
-      - NamesFirstNavy
       - NamesLastNavy
       nameFormat: name-format-ert
 
@@ -176,13 +173,13 @@
 - type: entity
   id: RandomHumanoidSpawnerNavyEngineer
   name: инженер ВКФ
+  suffix: Рейнхейт, ВКФ
   components:
     - type: Sprite
       sprite: _DeadSpace/_Soyuz/Markers/jobs.rsi
       state: nanotrasen_navy_engineer
     - type: RandomMetadata
       nameSegments:
-      - NamesFirstNavy
       - NamesLastNavy
       nameFormat: name-format-ert
     - type: RandomHumanoidSpawner
@@ -214,6 +211,5 @@
       prototypes: [ NavyEngineerGear ]
     - type: RandomMetadata
       nameSegments:
-      - NamesFirstNavy
       - NamesLastNavy
       nameFormat: name-format-ert

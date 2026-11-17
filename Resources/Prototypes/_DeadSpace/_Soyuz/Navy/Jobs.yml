@@ -17,6 +17,17 @@
   special:
   - !type:AddImplantSpecial
     implants: [ MindShieldImplant, TrackingImplant, DeathRattleImplantNKO, AntiAlcoholImplant ]
+  ranks:
+    NavyNKOCaptainOneClass:
+    - !type:RoleTimeRequirement
+      role: NavyCaptain
+      time: 90000 # 25 часов
+    NavyNKOCaptainTwoClass:
+    - !type:RoleTimeRequirement
+      role: NavyCaptain
+      time: 36000 # 10 часов
+    NavyNKOCaptainThreeClass: []
+
 
 - type: startingGear
   id: NavyCaptainGear
@@ -71,6 +82,13 @@
   special:
   - !type:AddImplantSpecial
     implants: [ MindShieldImplant, TrackingImplant, DeathRattleImplantNKO, AntiAlcoholImplant ]
+  ranks:
+    NavyNKOMichmanHead:
+    - !type:RoleTimeRequirement
+      role: NavyOfficer
+      time: 36000 # 10 часов
+    NavyNKOMichman: []
+
 
 - type: startingGear
   id: NavyOfficerGear
@@ -122,6 +140,12 @@
   special:
   - !type:AddImplantSpecial
     implants: [ MindShieldImplant, TrackingImplant, DeathRattleImplantNKO, AntiAlcoholImplant ]
+  ranks:
+    NavyNKOForemanOneClass:
+    - !type:RoleTimeRequirement
+      role: NavyMedical
+      time: 36000 # 10 часов
+    NavyNKOForemanTwoClass: []
 
 - type: startingGear
   id: NavyMedicalGear
@@ -177,6 +201,11 @@
   special:
   - !type:AddImplantSpecial
     implants: [ MindShieldImplant, TrackingImplant, DeathRattleImplantNKO, AntiAlcoholImplant ]
+    NavyNKOForemanOneClass:
+    - !type:RoleTimeRequirement
+      role: NavyEngineer
+      time: 36000 # 10 часов
+    NavyNKOForemanTwoClass: []
 
 - type: startingGear
   id: NavyEngineerGear
