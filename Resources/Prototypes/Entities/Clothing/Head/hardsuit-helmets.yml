@@ -355,10 +355,13 @@
   # DS14-start: use the RSI's pre-upstream worn states.
   - type: Clothing
     sprite: Clothing/Head/Hardsuits/security.rsi
-  - type: PointLight #DS-14
-    color: '#fce883' #DS14-soyuz
-    radius: 6 
+  # DS14-end
+  # DS14-start
+  - type: PointLight
+    color: "#3fb594"
+    radius: 6
     energy: 3
+  # DS14-end
   - type: PressureProtection
     highPressureMultiplier: 0.525
     lowPressureMultiplier: 1000
@@ -661,10 +664,13 @@
   # DS14-start: use the RSI's pre-upstream worn states.
   - type: Clothing
     sprite: Clothing/Head/Hardsuits/security-red.rsi
-  - type: PointLight #DS-14
-    color: '#fce883' #DS14-soyuz
+  # DS14-end
+  # DS14-start
+  - type: PointLight
+    color: "#3fb594"
     radius: 6
     energy: 3
+  # DS14-end
   - type: PressureProtection
     highPressureMultiplier: 0.45
     lowPressureMultiplier: 1000
@@ -1022,10 +1028,10 @@
 #CENTCOMM / ERT HARDSUITS
 #ERT Leader Hardsuit
 - type: entity
-  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndieCommander ]
+  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndieCommander, BaseHardsuitHelmetBluespaceMassScanner ] # DS14-Soyuz
   id: ClothingHeadHelmetHardsuitERTLeader
   name: ERT leader hardsuit helmet
-  description: A special hardsuit helmet worn by members of an emergency response team.
+  description: A special hardsuit helmet worn by members of an emergency response team. Includes a built-in bluespace mass scanner. # DS14-Soyuz
   components:
   # DS14-start
   - type: Sprite
@@ -1045,10 +1051,10 @@
 
 #ERT Chaplain Hardsuit
 - type: entity
-  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndie ]
+  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndie, BaseHardsuitHelmetBluespaceMassScanner ] # DS14-Soyuz
   id: ClothingHeadHelmetHardsuitERTChaplain
   name: ERT chaplain hardsuit helmet
-  description: A special hardsuit helmet worn by members of an emergency response team.
+  description: A special hardsuit helmet worn by members of an emergency response team. Includes a built-in bluespace mass scanner. # DS14-Soyuz
   components:
   # DS14-start
   - type: Sprite
@@ -1061,10 +1067,10 @@
 
 #ERT Engineer Hardsuit
 - type: entity
-  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndie ]
+  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndie, BaseHardsuitHelmetBluespaceMassScanner ] # DS14-Soyuz
   id: ClothingHeadHelmetHardsuitERTEngineer
   name: ERT engineer hardsuit helmet
-  description: A special hardsuit helmet worn by members of an emergency response team.
+  description: A special hardsuit helmet worn by members of an emergency response team. Includes a built-in bluespace mass scanner. # DS14-Soyuz
   components:
   # DS14-start
   - type: Sprite
@@ -1086,10 +1092,10 @@
 
 #ERT Medical Hardsuit
 - type: entity
-  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndieElite ]
+  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndieElite, BaseHardsuitHelmetBluespaceMassScanner ] # DS14-Soyuz
   id: ClothingHeadHelmetHardsuitERTMedical
   name: ERT medic hardsuit helmet
-  description: A special hardsuit helmet worn by members of an emergency response team.
+  description: A special hardsuit helmet worn by members of an emergency response team. Includes a built-in bluespace mass scanner. # DS14-Soyuz
   components:
   # DS14-start
   - type: Sprite
@@ -1102,10 +1108,10 @@
 
 #ERT Security Hardsuit
 - type: entity
-  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndie ]
+  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndie, BaseHardsuitHelmetBluespaceMassScanner ] # DS14-Soyuz
   id: ClothingHeadHelmetHardsuitERTSecurity
   name: ERT security hardsuit helmet
-  description: A special hardsuit helmet worn by members of an emergency response team.
+  description: A special hardsuit helmet worn by members of an emergency response team. Includes a built-in bluespace mass scanner. # DS14-Soyuz
   components:
   # DS14-start
   - type: Sprite
@@ -1125,10 +1131,10 @@
 
 #ERT Janitor Hardsuit
 - type: entity
-  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndie ]
+  parent: [ BaseCentcommContraband, ClothingHeadHelmetHardsuitSyndie, BaseHardsuitHelmetBluespaceMassScanner ] # DS14-Soyuz
   id: ClothingHeadHelmetHardsuitERTJanitor
   name: ERT janitor hardsuit helmet
-  description: A special hardsuit helmet worn by members of an emergency response team.
+  description: A special hardsuit helmet worn by members of an emergency response team. Includes a built-in bluespace mass scanner. # DS14-Soyuz
   components:
   # DS14-start
   - type: Sprite
@@ -1141,10 +1147,10 @@
 
 #CBURN Hardsuit
 - type: entity
-  parent: [ BaseCentcommContraband, ClothingHeadHardsuitBase, ClothingHeadSuitWithLightBase ]
+  parent: [ BaseCentcommContraband, ClothingHeadHardsuitBase, ClothingHeadSuitWithLightBase, BaseHardsuitHelmetBluespaceMassScanner ] # DS14-Soyuz
   id: ClothingHeadHelmetCBURN
   name: CBURN exosuit helmet
-  description: A pressure resistant and fireproof hood worn by special cleanup units.
+  description: A pressure resistant and fireproof hood worn by special cleanup units. Includes a built-in bluespace mass scanner. # DS14-Soyuz
   components:
   - type: Sprite
     sprite: Clothing/Head/Hardsuits/cburn.rsi
@@ -1194,10 +1200,10 @@
 
 #Deathsquad Hardsuit
 - type: entity
-  parent: [ BaseCentcommContraband, ClothingHeadHardsuitBase, ClothingHeadSuitWithLightBase ] # DS14
+  parent: [ BaseCentcommContraband, ClothingHeadHardsuitBase, ClothingHeadSuitWithLightBase, BaseHardsuitHelmetBluespaceMassScanner ] # DS14 | DS14-Soyuz
   id: ClothingHeadHelmetHardsuitDeathsquad
   name: deathsquad hardsuit helmet
-  description: A robust helmet for special operations.
+  description: A robust helmet for special operations. Includes a built-in bluespace mass scanner. # DS14-Soyuz
   components:
   - type: BreathMask
   - type: Sprite

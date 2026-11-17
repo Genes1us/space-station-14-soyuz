@@ -1,4 +1,4 @@
-// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSES/LICENSE.TXT
+// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSE-SOYUZ.TXT
 
 using System.Linq;
 using Content.Shared.Damage.Components;
@@ -189,7 +189,7 @@ public sealed partial class MedicalOrderSystem
             patient.Score = Math.Max(0, GetScore(body, config));
             patient.Submitted = true;
             if (body.Patient is { } uid && Exists(uid))
-                QueueDel(uid);
+                _patientCleanup.Add(uid);
         }
         catch (Exception exception)
         {

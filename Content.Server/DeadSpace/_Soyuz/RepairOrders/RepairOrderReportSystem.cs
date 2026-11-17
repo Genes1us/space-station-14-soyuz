@@ -1,4 +1,4 @@
-// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSES/LICENSE.TXT
+// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSE-SOYUZ.TXT
 
 using System.Linq;
 using Content.Server.Popups;
@@ -231,6 +231,13 @@ public sealed class RepairOrderReportSystem : EntitySystem
             ("max", completed.MaxPoints));
         AddLine(report, "repair-orders-report-reward-budget", ("budget", completed.RewardBudget));
         AddLine(report, "repair-orders-report-reputation", ("reputation", completed.EarnedReputation));
+
+        if (completed.Result == RepairOrderResult.Retained)
+        {
+            AddLine(report, "repair-orders-report-status", ("status", Loc.GetString("repair-orders-status-retained")));
+            AddLine(report, "repair-orders-retain-paid", ("points", completed.RetentionCost));
+            return report.ToMarkup();
+        }
 
         if (completed.Result == RepairOrderResult.Completed)
         {

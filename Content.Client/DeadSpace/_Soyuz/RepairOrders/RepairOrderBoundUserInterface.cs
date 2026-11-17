@@ -1,4 +1,4 @@
-// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSES/LICENSE.TXT
+// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSE-SOYUZ.TXT
 
 using Content.Shared.DeadSpace._Soyuz.RepairOrders;
 
@@ -22,6 +22,7 @@ public sealed class RepairOrderBoundUserInterface : BoundUserInterface
         _window = new RepairOrderWindow(draft);
         _window.OnAccept += runtimeId => SendMessage(new RepairOrderAcceptMessage(runtimeId));
         _window.OnComplete += (runtimeId, allowIncomplete) => SendMessage(new RepairOrderCompleteMessage(runtimeId, allowIncomplete));
+        _window.OnRetain += (runtimeId, allowIncomplete, price) => SendMessage(new RepairOrderCompleteMessage(runtimeId, allowIncomplete, retain: true, expectedRetentionCost: price));
         _window.OnPrintReport += runtimeId => SendMessage(new RepairOrderPrintReportMessage(runtimeId));
         _window.OnShopPurchase += (requestId, lines) => SendMessage(new RepairOrderShopPurchaseMessage(requestId, lines));
         _window.OnClose += Close;

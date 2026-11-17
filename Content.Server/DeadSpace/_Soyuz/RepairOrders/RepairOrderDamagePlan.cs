@@ -1,4 +1,4 @@
-// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSES/LICENSE.TXT
+// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSE-SOYUZ.TXT
 
 using System.Collections.Immutable;
 using System.Numerics;
@@ -28,6 +28,7 @@ public sealed record RepairDamageEventResult(ProtoId<RepairDamageEventPrototype>
 public sealed record RepairOrderDamagePlan(int Seed, int Attempt, ImmutableArray<Vector2i> RemovedTiles,
     ImmutableArray<int> RemovedEntities, ImmutableArray<RepairDamageEventResult> Events, int DamageValue, int TotalValue)
 {
+    public bool RelaxedMinimums { get; init; }
     public float DamageFraction => TotalValue > 0 ? (float) DamageValue / TotalValue : 0;
     public RepairDamageGenerationInfo ToInfo() => new(Seed, Attempt, Events.Select(e => e.Event.Id).ToImmutableArray(),
         RemovedTiles.Length, RemovedEntities.Length, DamageValue, DamageFraction);

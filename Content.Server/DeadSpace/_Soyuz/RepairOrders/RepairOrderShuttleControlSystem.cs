@@ -1,4 +1,4 @@
-// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSES/LICENSE.TXT
+// Мёртвый Космос, Союз-1, Licensed under custom terms with restrictions on public hosting and commercial use, full text: https://raw.githubusercontent.com/dead-space-server/space-station-14-soyuz/master/LICENSE-SOYUZ.TXT
 
 using Content.Server.Shuttles.Events;
 
@@ -18,6 +18,13 @@ public sealed class RepairOrderShuttleControlSystem : EntitySystem
 
     private void OnShuttleControlAttempt(ref ShuttleControlAttemptEvent args)
     {
+        if (HasComp<RepairOrderCleanupComponent>(args.GridUid))
+        {
+            args.Cancelled = true;
+            args.Reason = Loc.GetString("repair-orders-shuttle-controls-locked");
+            return;
+        }
+
         var query = EntityQueryEnumerator<RepairOrderStationComponent>();
         while (query.MoveNext(out _, out var station))
         {

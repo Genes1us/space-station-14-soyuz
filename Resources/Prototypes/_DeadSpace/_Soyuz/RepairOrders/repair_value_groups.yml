@@ -144,6 +144,7 @@
   - TegCenter
   - TritiumCanister
   - TungstenGasCanister
+  - TungstenTlecCanister
   - WaterVaporCanister
   - ZaukerCanister
 - type: repairValueGroup
@@ -1681,6 +1682,7 @@
   id: RepairValueMachine
   tag: RepairMachine
   entities:
+  - ShuttleCollisionSensor
   - ATM
   - ATMFrame
   - ATMFrameWired
@@ -1908,7 +1910,6 @@
   - MachineFrameDestroyed
   - MachineMaterialSilo
   - MachineMaterialSiloTaipan
-  - MaterialMarketplace
   - MedicalScanner
   - MedicalTechFab
   - MedicalTechFabTaipan
@@ -2701,13 +2702,6 @@
   - CrateServiceSmokeables
   - CrateServiceSodaDispenser
   - CrateServiceTheatre
-  - CrateSkillBooks_Engineering_Advanced
-  - CrateSkillBooks_Engineering_Basic
-  - CrateSkillBooks_Medical_Advanced
-  - CrateSkillBooks_Medical_Basic
-  - CrateSkillBooks_Research_Advanced
-  - CrateSkillBooks_Research_Basic
-  - CrateSkillBooks_Service_Basic
   - CrateStationAiCore
   - CrateStoneGrave
   - CrateStrongViralSolution
@@ -3055,6 +3049,7 @@
   id: RepairValueStructure
   tag: RepairStructure
   entities:
+  - ShuttleCollisionSensorAssembly
   - APCFrame
   - AdvancedCargoTechMag
   - AirCanisterBroken
@@ -3445,6 +3440,7 @@
   - AirlockExternalGlassShuttleCentcommERTGammaLocked
   - AirlockExternalGlassShuttleCentcommERTLocked
   - AirlockExternalGlassShuttleCentcommERTOfficialLocked
+  - AirlockExternalGlassShuttleDeathSquad
   - AirlockExternalGlassShuttleEmergencyLocked
   - AirlockExternalGlassShuttleEscape
   - AirlockExternalGlassShuttleGeneralStaff
